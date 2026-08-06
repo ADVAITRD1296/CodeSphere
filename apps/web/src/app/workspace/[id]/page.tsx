@@ -225,26 +225,28 @@ export default function WorkspaceIDEPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0f172a', color: '#f8fafc', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--crust)', color: 'var(--text)', overflow: 'hidden' }}>
       {/* IDE Top Header */}
-      <header style={{ height: '50px', backgroundColor: '#181825', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', userSelect: 'none', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Link href="/dashboard" style={{ color: '#9399b2', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
-            <ArrowLeft size={16} /> Dashboard
+      <header className="ide-header">
+        {/* Left: Nav + Workspace Name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--overlay1)', fontSize: '0.82rem', transition: 'color var(--ease-fast)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--overlay1)')}>
+            <ArrowLeft size={15} /> Dashboard
           </Link>
-          <div style={{ height: '16px', width: '1px', backgroundColor: 'rgba(255,255,255,0.1)' }} />
-
+          <span className="divider-v" style={{ height: '16px' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Code2 size={20} color="#3b82f6" />
-            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{activeWorkspace.name}</span>
-            <span className={`badge badge-${userRole.toLowerCase()}`} style={{ fontSize: '0.7rem' }}>
-              {userRole}
-            </span>
+            <div style={{ padding: '5px', background: 'linear-gradient(135deg, var(--blue), var(--mauve))', borderRadius: '7px', display: 'flex', alignItems: 'center' }}>
+              <Code2 size={15} color="#11111b" />
+            </div>
+            <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>{activeWorkspace.name}</span>
+            <span className={`badge badge-${userRole.toLowerCase()}`}>{userRole}</span>
           </div>
         </div>
 
-        {/* Header Right Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Right: Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {/* WebRTC Voice Call Control */}
           <VoiceCallControl
             isInVoice={isInVoice}
@@ -258,27 +260,16 @@ export default function WorkspaceIDEPage() {
             currentUsername={user?.username}
           />
 
-          {/* WebRTC Video Call Modal Trigger */}
+          {/* Video Call Button */}
           <button
             onClick={() => setShowVideoModal(true)}
+            className={`ide-pill-btn${isInVideo ? ' video-active' : ''}`}
             title="Open Video Conference"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 10px',
-              backgroundColor: isInVideo ? 'rgba(137,180,250,0.2)' : '#313244',
-              color: isInVideo ? '#89b4fa' : '#cdd6f4',
-              border: isInVideo ? '1px solid #89b4fa' : '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '6px',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
           >
-            <Video size={14} color={isInVideo ? '#89b4fa' : '#cdd6f4'} />
-            <span>{isInVideo ? 'In Meeting' : 'Video Call'}</span>
+            <Video size={13} /> {isInVideo ? 'In Meeting' : 'Video'}
           </button>
+
+          <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
 
           {/* Member Presence Avatars */}
           <UserAvatars
@@ -287,148 +278,77 @@ export default function WorkspaceIDEPage() {
             onTogglePresenceSidebar={() => setShowPresenceSidebar(v => !v)}
           />
 
-          {/* Presence Drawer Toggle Button */}
+          {/* Active Members Count */}
           <button
             onClick={() => setShowPresenceSidebar(v => !v)}
+            className={`ide-pill-btn${showPresenceSidebar ? ' active' : ''}`}
             title="Toggle Live Members Presence"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 10px',
-              backgroundColor: showPresenceSidebar ? 'rgba(137,180,250,0.15)' : 'transparent',
-              color: showPresenceSidebar ? '#89b4fa' : '#9399b2',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '6px',
-              fontSize: '0.8rem',
-              cursor: 'pointer'
-            }}
           >
-            <Users size={14} />
-            <span>{presenceSummary.totalOnline} Active</span>
+            <Users size={13} /> {presenceSummary.totalOnline} Active
           </button>
 
-          {/* Quick Run Button in Header */}
+          <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
+
+          {/* Quick Run */}
           {!isReadOnly && activeFile && (
             <button
               onClick={() => handleRunCode(activeFile.language, activeFile.content)}
               disabled={isRunning}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                backgroundColor: isRunning ? '#313244' : '#a6e3a1',
-                color: isRunning ? '#9399b2' : '#1e1e2e',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                cursor: isRunning ? 'not-allowed' : 'pointer',
-                transition: 'all 0.15s ease',
-              }}
+              className="ide-pill-btn run-btn"
+              title="Run Code"
             >
-              <Play size={13} fill="currentColor" />
-              {isRunning ? 'Running...' : 'Run'}
+              <Play size={12} fill="currentColor" />
+              {isRunning ? 'Running…' : 'Run'}
             </button>
           )}
 
-          {/* History Toggle */}
+          {/* History */}
           {activeFile && (
-            <button
-              onClick={() => setShowSnapshot(true)}
-              title="Version History"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                backgroundColor: 'transparent',
-                color: '#9399b2',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '6px',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-              }}
-            >
+            <button onClick={() => setShowSnapshot(true)} className="ide-icon-btn" title="Version History">
               <History size={14} />
             </button>
           )}
 
           {/* Terminal Toggle */}
           <button
-            onClick={() => setTerminalCollapsed((v) => !v)}
+            onClick={() => setTerminalCollapsed(v => !v)}
+            className={`ide-icon-btn${!terminalCollapsed ? ' active' : ''}`}
             title="Toggle Terminal"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              backgroundColor: terminalCollapsed ? 'transparent' : 'rgba(137,180,250,0.12)',
-              color: '#9399b2',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '6px',
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-            }}
           >
             <Terminal size={14} />
           </button>
 
-          {/* Settings Button */}
+          {/* Settings (Owner only) */}
           {userRole === 'OWNER' && (
-            <button
-              onClick={() => setShowSettings(true)}
-              title="Workspace Settings"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                backgroundColor: 'transparent',
-                color: '#9399b2',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '6px',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-              }}
-            >
+            <button onClick={() => setShowSettings(true)} className="ide-icon-btn" title="Workspace Settings">
               <Settings size={14} />
             </button>
           )}
 
           {/* Chat Toggle */}
           <button
-            onClick={() => setShowChat((v) => !v)}
+            onClick={() => setShowChat(v => !v)}
+            className={`ide-icon-btn${showChat ? ' active' : ''}`}
             title="Room Chat"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              backgroundColor: showChat ? 'rgba(137,180,250,0.12)' : 'transparent',
-              color: '#9399b2',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '6px',
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-            }}
           >
             <MessageSquare size={14} />
           </button>
 
+          <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
+
           {userRole === 'OWNER' && (
-            <button onClick={() => setShowInviteModal(true)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-              <UserPlus size={14} /> Invite
+            <button onClick={() => setShowInviteModal(true)} className="btn-secondary" style={{ padding: '5px 10px', fontSize: '0.78rem', gap: '5px' }}>
+              <UserPlus size={13} /> Invite
             </button>
           )}
 
-          <button onClick={copyRoomLink} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-            {copiedLink ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-            {copiedLink ? 'Copied' : 'Share Link'}
+          <button onClick={copyRoomLink} className="btn-secondary" style={{ padding: '5px 10px', fontSize: '0.78rem', gap: '5px' }}>
+            {copiedLink ? <Check size={13} color="var(--green)" /> : <Copy size={13} />}
+            {copiedLink ? 'Copied!' : 'Share'}
           </button>
         </div>
       </header>
+
 
       {/* Main IDE Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', flexDirection: 'column' }}>

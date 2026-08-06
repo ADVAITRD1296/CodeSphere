@@ -38,28 +38,38 @@ export default function RegisterPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', padding: '20px' }}>
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '440px', padding: '40px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ display: 'inline-flex', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', padding: '12px', borderRadius: '16px', marginBottom: '16px' }}>
-            <Code2 size={32} color="#ffffff" />
+    <div className="auth-bg">
+      <div className="glass-panel animate-scale-in" style={{ width: '100%', maxWidth: '440px', padding: '44px 40px' }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <div style={{
+            display: 'inline-flex',
+            background: 'linear-gradient(135deg, var(--mauve), var(--pink))',
+            padding: '14px',
+            borderRadius: '18px',
+            marginBottom: '18px',
+            boxShadow: '0 8px 24px rgba(203, 166, 247, 0.25)'
+          }}>
+            <Code2 size={34} color="#11111b" strokeWidth={2.5} />
           </div>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px' }}>Create Account</h2>
-          <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>Join CodeSphere to collaborate live on code</p>
+          <h1 style={{ fontSize: '1.9rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text)' }}>
+            Create Account
+          </h1>
+          <p style={{ color: 'var(--subtext0)', fontSize: '0.93rem' }}>
+            Join CodeSphere to collaborate live on code
+          </p>
         </div>
 
         {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.9rem' }}>
-            <AlertCircle size={18} />
+          <div className="alert-error">
+            <AlertCircle size={16} strokeWidth={2.5} />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '8px' }}>
-              Username
-            </label>
+            <label className="form-label">Username</label>
             <input
               type="text"
               required
@@ -71,9 +81,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '8px' }}>
-              Email Address
-            </label>
+            <label className="form-label">Email Address</label>
             <input
               type="email"
               required
@@ -85,9 +93,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '8px' }}>
-              Password
-            </label>
+            <label className="form-label">Password</label>
             <input
               type="password"
               required
@@ -98,14 +104,26 @@ export default function RegisterPage() {
             />
           </div>
 
-          <button type="submit" disabled={isSubmitting} className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '10px', padding: '12px' }}>
-            {isSubmitting ? 'Creating account...' : 'Create Account'} <UserPlus size={18} />
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="btn-primary"
+            style={{ width: '100%', justifyContent: 'center', marginTop: '8px', padding: '13px' }}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="spinner" style={{ width: '16px', height: '16px' }} />
+                Creating account…
+              </>
+            ) : (
+              <>Create Account <UserPlus size={16} /></>
+            )}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem', marginTop: '28px' }}>
+        <p style={{ textAlign: 'center', color: 'var(--overlay1)', fontSize: '0.88rem', marginTop: '28px' }}>
           Already have an account?{' '}
-          <Link href="/login" style={{ color: '#60a5fa', fontWeight: 600 }}>
+          <Link href="/login" style={{ color: 'var(--blue)', fontWeight: 600 }}>
             Sign In
           </Link>
         </p>

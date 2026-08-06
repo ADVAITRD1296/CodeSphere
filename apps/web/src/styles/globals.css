@@ -1,42 +1,113 @@
+/* ═══════════════════════════════════════════════════════════════
+   CodeSphere — Global Design System
+   Theme: Catppuccin Mocha × Premium Dark IDE
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Design Tokens ──────────────────────────────────────────── */
 :root {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --bg-editor: #1e1e2e;
-  --bg-sidebar: #181825;
-  --bg-card: rgba(30, 41, 59, 0.7);
-  
-  --accent-blue: #3b82f6;
-  --accent-purple: #8b5cf6;
-  --accent-cyan: #06b6d4;
-  --accent-green: #10b981;
-  --accent-red: #ef4444;
-  --accent-orange: #f97316;
-  
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dark: #64748b;
-  
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-glow: rgba(59, 130, 246, 0.4);
-  
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace;
+  /* Base surfaces — Catppuccin Mocha */
+  --crust:    #11111b;
+  --mantle:   #181825;
+  --base:     #1e1e2e;
+  --surface0: #313244;
+  --surface1: #45475a;
+  --surface2: #585b70;
+
+  /* Text */
+  --text:     #cdd6f4;
+  --subtext1: #bac2de;
+  --subtext0: #a6adc8;
+  --overlay2: #9399b2;
+  --overlay1: #7f849c;
+  --overlay0: #6c7086;
+
+  /* Accent Colors */
+  --blue:     #89b4fa;
+  --lavender: #b4befe;
+  --mauve:    #cba6f7;
+  --pink:     #f5c2e7;
+  --red:      #f38ba8;
+  --peach:    #fab387;
+  --yellow:   #f9e2af;
+  --green:    #a6e3a1;
+  --teal:     #94e2d5;
+  --sky:      #89dceb;
+  --sapphire: #74c7ec;
+  --flamingo: #f2cdcd;
+  --rosewater:#f5e0dc;
+
+  /* Semantic Aliases */
+  --bg-primary:   var(--crust);
+  --bg-secondary: var(--mantle);
+  --bg-editor:    var(--base);
+  --bg-sidebar:   var(--mantle);
+  --accent:       var(--blue);
+  --accent-2:     var(--mauve);
+  --danger:       var(--red);
+  --success:      var(--green);
+  --warning:      var(--yellow);
+
+  /* Text Aliases */
+  --text-main:    var(--text);
+  --text-muted:   var(--subtext0);
+  --text-dark:    var(--overlay0);
+
+  /* Borders */
+  --border:       rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(137, 180, 250, 0.5);
+  --border-glow:  rgba(137, 180, 250, 0.25);
+
+  /* Shadows */
+  --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md:    0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg:    0 24px 64px rgba(0, 0, 0, 0.7);
+  --shadow-glow:  0 0 20px rgba(137, 180, 250, 0.2);
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace;
+
+  /* Spacing Scale */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+
+  /* Transitions */
+  --ease-fast:   0.12s ease;
+  --ease-normal: 0.2s ease;
+  --ease-slow:   0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-Index Layers */
+  --z-modal:    200;
+  --z-overlay:  150;
+  --z-sidebar:  100;
+  --z-header:   50;
+  --z-tooltip:  300;
 }
 
-* {
+/* ── 2. Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-main);
-  font-family: var(--font-family);
+  font-family: var(--font-sans);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -44,180 +115,678 @@ a {
   text-decoration: none;
 }
 
-/* Custom Scrollbar */
+code, pre, kbd {
+  font-family: var(--font-mono);
+}
+
+/* ── 3. Custom Scrollbar ───────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-tertiary);
-  border-radius: 4px;
+  background: var(--surface0);
+  border-radius: 999px;
+  transition: background var(--ease-normal);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-blue);
+  background: var(--surface1);
 }
 
-/* Glassmorphism primitives */
+/* ── 4. Keyframe Animations ────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(137, 180, 250, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(137, 180, 250, 0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* ── 5. Animation Utility Classes ──────────────────────────────── */
+.animate-fade-in    { animation: fadeIn    var(--ease-slow) forwards; }
+.animate-slide-up   { animation: slideUp   var(--ease-slow) forwards; }
+.animate-slide-right{ animation: slideRight var(--ease-slow) forwards; }
+.animate-slide-down { animation: slideDown  var(--ease-slow) forwards; }
+.animate-scale-in   { animation: scaleIn   var(--ease-slow) forwards; }
+
+/* Staggered children */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+
+/* ── 6. Typography ─────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--mauve) 50%, var(--pink) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-subtle {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--sapphire) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── 7. Glassmorphism Primitives ───────────────────────────────── */
 .glass-panel {
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background: rgba(30, 30, 46, 0.75);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .glass-card {
-  background: rgba(30, 41, 59, 0.4);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  transition: all 0.2s ease-in-out;
+  background: rgba(49, 50, 68, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-md);
+  transition: transform var(--ease-normal), background var(--ease-normal),
+              border-color var(--ease-normal), box-shadow var(--ease-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(137, 180, 250, 0.03) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity var(--ease-normal);
+  pointer-events: none;
 }
 
 .glass-card:hover {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: var(--border-glow);
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+  background: rgba(49, 50, 68, 0.65);
+  border-color: rgba(137, 180, 250, 0.2);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(137, 180, 250, 0.08);
+  transform: translateY(-2px);
 }
 
-/* Typography & Badges */
-.gradient-text {
-  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.glass-card:hover::before {
+  opacity: 1;
 }
 
+/* ── 8. Badges ─────────────────────────────────────────────────── */
 .badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .badge-owner {
-  background: rgba(139, 92, 246, 0.2);
-  color: #c084fc;
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(203, 166, 247, 0.15);
+  color: var(--mauve);
+  border: 1px solid rgba(203, 166, 247, 0.3);
 }
 
 .badge-editor {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(137, 180, 250, 0.15);
+  color: var(--blue);
+  border: 1px solid rgba(137, 180, 250, 0.3);
 }
 
 .badge-viewer {
-  background: rgba(100, 116, 139, 0.2);
-  color: #94a3b8;
-  border: 1px solid rgba(100, 116, 139, 0.4);
+  background: rgba(108, 112, 134, 0.2);
+  color: var(--overlay2);
+  border: 1px solid rgba(108, 112, 134, 0.3);
 }
 
-/* Buttons */
+/* ── 9. Buttons ────────────────────────────────────────────────── */
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: #ffffff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--sapphire) 100%);
+  color: var(--crust);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(137, 180, 250, 0.35);
+  transition: transform var(--ease-fast), box-shadow var(--ease-fast), filter var(--ease-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+  opacity: 0;
+  transition: opacity var(--ease-fast);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 6px 20px rgba(137, 180, 250, 0.5);
+  filter: brightness(1.05);
+}
+
+.btn-primary:hover::after { opacity: 1; }
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(137, 180, 250, 0.3);
 }
 
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-main);
-  border: 1px solid var(--border-color);
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s ease;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--subtext1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--ease-fast), border-color var(--ease-fast), color var(--ease-fast);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--text);
 }
 
 .btn-danger {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 16px;
-  border-radius: 6px;
+  background: rgba(243, 139, 168, 0.12);
+  color: var(--red);
+  border: 1px solid rgba(243, 139, 168, 0.25);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background var(--ease-fast), border-color var(--ease-fast);
 }
 
 .btn-danger:hover {
-  background: rgba(239, 68, 68, 0.4);
+  background: rgba(243, 139, 168, 0.22);
+  border-color: rgba(243, 139, 168, 0.45);
 }
 
-/* Inputs */
+/* ── 10. IDE-Specific Buttons ──────────────────────────────────── */
+
+/* Pill-style toolbar button (header actions) */
+.ide-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--overlay2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--ease-fast), color var(--ease-fast),
+              border-color var(--ease-fast), box-shadow var(--ease-fast);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.ide-pill-btn:hover {
+  background: rgba(137, 180, 250, 0.1);
+  color: var(--text);
+  border-color: rgba(137, 180, 250, 0.2);
+}
+
+.ide-pill-btn.active {
+  background: rgba(137, 180, 250, 0.15);
+  color: var(--blue);
+  border-color: rgba(137, 180, 250, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(137, 180, 250, 0.1);
+}
+
+.ide-pill-btn.run-btn {
+  background: linear-gradient(135deg, rgba(166, 227, 161, 0.18), rgba(148, 226, 213, 0.12));
+  color: var(--green);
+  border-color: rgba(166, 227, 161, 0.3);
+  font-weight: 700;
+}
+
+.ide-pill-btn.run-btn:hover {
+  background: linear-gradient(135deg, rgba(166, 227, 161, 0.28), rgba(148, 226, 213, 0.2));
+  border-color: rgba(166, 227, 161, 0.5);
+  box-shadow: 0 0 12px rgba(166, 227, 161, 0.15);
+}
+
+.ide-pill-btn.run-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ide-pill-btn.video-active {
+  background: rgba(137, 180, 250, 0.15);
+  color: var(--blue);
+  border-color: rgba(137, 180, 250, 0.4);
+}
+
+/* Square icon-only button */
+.ide-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: var(--overlay1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--ease-fast), color var(--ease-fast), border-color var(--ease-fast);
+  flex-shrink: 0;
+}
+
+.ide-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.ide-icon-btn.active {
+  background: rgba(137, 180, 250, 0.12);
+  color: var(--blue);
+  border-color: rgba(137, 180, 250, 0.25);
+}
+
+/* ── 11. IDE Header ────────────────────────────────────────────── */
+.ide-header {
+  height: 48px;
+  background: rgba(24, 24, 37, 0.9);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  user-select: none;
+  flex-shrink: 0;
+  position: relative;
+  z-index: var(--z-header);
+}
+
+/* ── 12. IDE Tab Bar ───────────────────────────────────────────── */
+.ide-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 36px;
+  background: transparent;
+  color: var(--overlay1);
+  border: none;
+  border-right: 1px solid var(--border);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--ease-fast), color var(--ease-fast);
+  white-space: nowrap;
+}
+
+.ide-tab:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+.ide-tab.active {
+  background: var(--base);
+  color: var(--text);
+  border-bottom: 2px solid var(--blue);
+}
+
+/* ── 13. Form Inputs ───────────────────────────────────────────── */
 .input-field {
   width: 100%;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid var(--border-color);
-  color: var(--text-main);
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  background: rgba(17, 17, 27, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color var(--ease-fast), box-shadow var(--ease-fast), background var(--ease-fast);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input-field::placeholder {
+  color: var(--overlay0);
 }
 
 .input-field:focus {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  border-color: rgba(137, 180, 250, 0.55);
+  background: rgba(17, 17, 27, 0.9);
+  box-shadow: 0 0 0 3px rgba(137, 180, 250, 0.12);
 }
 
-/* Remote Cursor Custom Styles for Y-Monaco */
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--subtext0);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* ── 14. Modal Overlay & Card ──────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: 20px;
+  animation: fadeIn 0.15s ease forwards;
+}
+
+.modal-content {
+  background: var(--mantle);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  position: relative;
+}
+
+.modal-content h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+/* ── 15. Alert / Toast Styles ──────────────────────────────────── */
+.alert-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(243, 139, 168, 0.1);
+  border: 1px solid rgba(243, 139, 168, 0.25);
+  color: var(--red);
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+  animation: slideDown var(--ease-slow) forwards;
+}
+
+.alert-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(166, 227, 161, 0.1);
+  border: 1px solid rgba(166, 227, 161, 0.25);
+  color: var(--green);
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+  animation: slideDown var(--ease-slow) forwards;
+}
+
+/* ── 16. Auth Page Background ──────────────────────────────────── */
+.auth-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--crust);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-bg::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(137, 180, 250, 0.07) 0%, transparent 70%);
+  top: -200px;
+  left: -100px;
+  pointer-events: none;
+}
+
+.auth-bg::after {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(203, 166, 247, 0.06) 0%, transparent 70%);
+  bottom: -150px;
+  right: -100px;
+  pointer-events: none;
+}
+
+/* ── 17. Dashboard / Workspace Cards ───────────────────────────── */
+.ws-card {
+  background: rgba(49, 50, 68, 0.35);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 200px;
+  cursor: pointer;
+  transition: transform var(--ease-normal), background var(--ease-normal),
+              border-color var(--ease-normal), box-shadow var(--ease-normal);
+  position: relative;
+  overflow: hidden;
+  animation: slideUp var(--ease-slow) both;
+}
+
+.ws-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(137, 180, 250, 0.25), transparent);
+  opacity: 0;
+  transition: opacity var(--ease-normal);
+}
+
+.ws-card:hover {
+  transform: translateY(-3px);
+  background: rgba(49, 50, 68, 0.6);
+  border-color: rgba(137, 180, 250, 0.2);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(137, 180, 250, 0.08);
+}
+
+.ws-card:hover::after {
+  opacity: 1;
+}
+
+/* ── 18. Dashboard Navbar ──────────────────────────────────────── */
+.dash-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 36px;
+  background: rgba(24, 24, 37, 0.85);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+}
+
+/* ── 19. Loading Spinner ───────────────────────────────────────── */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(137, 180, 250, 0.2);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── 20. Remote Cursor Styles (Y-Monaco) ───────────────────────── */
 .yRemoteSelection {
-  background-color: rgba(250, 128, 114, 0.3);
+  background-color: rgba(250, 128, 114, 0.25);
 }
 
 .yRemoteSelectionHead {
   position: absolute;
-  border-left: 2px solid orange;
-  border-top: 2px solid orange;
+  border-left: 2px solid #f97316;
+  border-top: 2px solid #f97316;
   height: 100%;
-
   box-sizing: border-box;
 }
 
 .yRemoteSelectionHead::after {
   position: absolute;
   content: ' ';
-  border: 3px solid orange;
+  border: 3px solid #f97316;
   border-radius: 4px;
   left: -4px;
   top: -5px;
+}
+
+/* ── 21. Presence Sidebar ──────────────────────────────────────── */
+.presence-sidebar {
+  width: 280px;
+  height: 100%;
+  background: var(--mantle);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideRight var(--ease-slow) forwards;
+  flex-shrink: 0;
+}
+
+/* ── 22. Chat Panel ────────────────────────────────────────────── */
+.chat-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 340px;
+  height: 480px;
+  background: var(--mantle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-sidebar);
+  animation: slideUp var(--ease-slow) forwards;
+  overflow: hidden;
+}
+
+/* ── 23. Status Dot ────────────────────────────────────────────── */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.online  { background: var(--green); }
+.status-dot.idle    { background: var(--yellow); }
+.status-dot.busy    { background: var(--red); }
+.status-dot.viewing { background: var(--blue); }
+.status-dot.offline { background: var(--surface1); }
+
+/* ── 24. Dividers ──────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0;
+}
+
+.divider-v {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
 }
