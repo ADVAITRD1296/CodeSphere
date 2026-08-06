@@ -26,8 +26,11 @@ app.use(helmet({
   contentSecurityPolicy: false // Disabled for dev flexibility
 }));
 
+// Trust reverse proxy (Render sits behind one) – needed for secure cookies & correct IP
+app.set('trust proxy', 1);
+
 app.use(cors({
-  origin: true, // reflect request origin, allows any device
+  origin: CLIENT_URL, // exact origin in production; CLIENT_URL set via env var
   credentials: true
 }));
 
