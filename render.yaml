@@ -2,9 +2,10 @@ services:
   - type: web
     name: codesphere-server
     runtime: node
-    rootDir: apps/server
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    # Root is the monorepo root so npm workspaces resolve @codesphere/shared correctly
+    rootDir: .
+    buildCommand: npm install && cd packages/shared && npm run build && cd ../../apps/server && npm run build
+    startCommand: node apps/server/dist/index.js
     envVars:
       - key: NODE_ENV
         value: production
