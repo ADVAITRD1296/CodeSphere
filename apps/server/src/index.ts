@@ -15,7 +15,7 @@ const app = express();
 const server = http.createServer(app);
 
 const PORT = Number(process.env.PORT) || 4000;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+const CLIENT_URL = (process.env.CLIENT_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 // Initialize WebSockets
 setupYjsWebSocketServer(server);
@@ -30,7 +30,10 @@ app.use(helmet({
 app.set('trust proxy', 1);
 
 app.use(cors({
-  origin: CLIENT_URL, // exact origin in production; CLIENT_URL set via env var
+  origin: (origin, callback) => {
+    // Dynamically reflect request origin so credentials work seamlessly with Vercel and local dev
+    callback(null, true);
+  },
   credentials: true
 }));
 
