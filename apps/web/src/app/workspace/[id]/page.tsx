@@ -132,7 +132,7 @@ export default function WorkspaceIDEPage() {
   } = useWhiteboard(workspaceId, socket);
 
   // Terminal state
-  const { lines, session, runCode, clearTerminal, isRunning } = useTerminal(socket);
+  const { lines, session, runCode, clearTerminal, sendInput, killExecution, isRunning } = useTerminal(socket);
   const [terminalCollapsed, setTerminalCollapsed] = useState(false);
   const [terminalHeight, setTerminalHeight] = useState(DEFAULT_TERMINAL_HEIGHT);
 
@@ -434,6 +434,8 @@ export default function WorkspaceIDEPage() {
           isRunning={isRunning}
           onRun={handleRunCode}
           onClear={clearTerminal}
+          onSendInput={sendInput}
+          onKillExecution={killExecution}
           activeFileContent={activeFile?.content}
           activeFileLanguage={activeFile?.language}
           isCollapsed={terminalCollapsed}

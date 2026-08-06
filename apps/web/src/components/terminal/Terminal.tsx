@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, memo, useCallback } from 'react';
-import { Play, Trash2, Square, ChevronDown, ChevronUp, Terminal as TerminalIcon } from 'lucide-react';
+import React, { useEffect, useRef, memo, useCallback, useState } from 'react';
+import { Play, Trash2, ChevronDown, ChevronUp, Terminal as TerminalIcon, Send, StopCircle } from 'lucide-react';
 import { ProgrammingLanguage } from '@codesphere/shared';
 import { TerminalLine, TerminalSession } from '../../hooks/useTerminal';
 
@@ -67,18 +67,12 @@ function ansiToHtml(text: string): string {
 
 // ─── Single Terminal Line Renderer ──────────────────────────────────────────
 const TerminalLineItem = memo(({ line }: { line: TerminalLine }) => {
-  const prefixMap: Record<string, string> = {
-    stdout: '',
-    stderr: '',
-    info:   '',
-    system: '',
-  };
-
   const baseColorMap: Record<string, string> = {
     stdout: '#cdd6f4',
     stderr: '#f38ba8',
     info:   '#89dceb',
     system: '#6c7086',
+    stdin:  '#89dceb',
   };
 
   const html = ansiToHtml(line.content);
@@ -103,6 +97,11 @@ const TerminalLineItem = memo(({ line }: { line: TerminalLine }) => {
           ✗
         </span>
       )}
+      {line.type === 'stdin' && (
+        <span style={{ color: '#89dceb', marginRight: '6px', flexShrink: 0, userSelect: 'none' }}>
+          ›
+        </span>
+      )}
       <span dangerouslySetInnerHTML={{ __html: html || '&nbsp;' }} />
     </div>
   );
@@ -125,6 +124,8 @@ interface TerminalPanelProps {
   isRunning: boolean;
   onRun: (language: ProgrammingLanguage, code: string) => void;
   onClear: () => void;
+  onSendInput: (input: string) => void;
+  onKillExecution: () => void;
   activeFileContent?: string;
   activeFileLanguage?: ProgrammingLanguage;
   isCollapsed: boolean;
@@ -140,6 +141,8 @@ export const TerminalPanel = memo(({
   isRunning,
   onRun,
   onClear,
+  onSendInput,
+  onKillExecution,
   activeFileContent,
   activeFileLanguage,
   isCollapsed,
@@ -148,9 +151,11 @@ export const TerminalPanel = memo(({
   onResizeStart,
 }: TerminalPanelProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [selectedLanguage, setSelectedLanguage] = React.useState<ProgrammingLanguage>(
     activeFileLanguage || 'JAVASCRIPT'
   );
+  const [stdinValue, setStdinValue] = useState('');
 
   // Auto-scroll to bottom on new lines
   useEffect(() => {
@@ -158,6 +163,13 @@ export const TerminalPanel = memo(({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [lines, isCollapsed]);
+
+  // Focus stdin input when process starts running
+  useEffect(() => {
+    if (isRunning && inputRef.current && !isCollapsed) {
+      inputRef.current.focus();
+    }
+  }, [isRunning, isCollapsed]);
 
   // Sync language with active file
   useEffect(() => {
@@ -170,6 +182,19 @@ export const TerminalPanel = memo(({
     const code = activeFileContent || '// No file open';
     onRun(selectedLanguage, code);
   }, [selectedLanguage, activeFileContent, onRun]);
+
+  const handleSendInput = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const val = stdinValue;
+      if (!val.trim() && val !== '') {
+        // allow empty sends (user just pressed Enter)
+      }
+      onSendInput(val);
+      setStdinValue('');
+    },
+    [stdinValue, onSendInput]
+  );
 
   const statusDot = session?.isRunning
     ? { color: '#f9e2af', label: 'RUNNING', pulse: true }
@@ -282,43 +307,64 @@ export const TerminalPanel = memo(({
             </select>
           )}
 
-          {/* Run Button */}
-          {!isCollapsed && (
+          {/* Run Button — hidden while running */}
+          {!isCollapsed && !isRunning && (
             <button
               onClick={handleRun}
-              disabled={isRunning}
-              title={isRunning ? 'Running...' : `Run ${selectedLanguage}`}
+              title={`Run ${selectedLanguage}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
                 padding: '3px 10px',
-                backgroundColor: isRunning ? '#313244' : '#a6e3a1',
-                color: isRunning ? '#9399b2' : '#1e1e2e',
+                backgroundColor: '#a6e3a1',
+                color: '#1e1e2e',
                 border: 'none',
                 borderRadius: '4px',
                 fontSize: '11px',
                 fontWeight: 700,
-                cursor: isRunning ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
             >
-              {isRunning ? (
-                <>
-                  <Square size={10} />
-                  Running
-                </>
-              ) : (
-                <>
-                  <Play size={10} fill="currentColor" />
-                  Run
-                </>
-              )}
+              <Play size={10} fill="currentColor" />
+              Run
+            </button>
+          )}
+
+          {/* Stop / Kill button — shown only while running */}
+          {!isCollapsed && isRunning && (
+            <button
+              onClick={onKillExecution}
+              title="Stop running process (SIGKILL)"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '3px 10px',
+                backgroundColor: 'rgba(243, 139, 168, 0.15)',
+                color: '#f38ba8',
+                border: '1px solid rgba(243, 139, 168, 0.3)',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(243, 139, 168, 0.28)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(243, 139, 168, 0.15)';
+              }}
+            >
+              <StopCircle size={10} />
+              Stop
             </button>
           )}
 
           {/* Clear Button */}
-          {!isCollapsed && lines.length > 0 && (
+          {!isCollapsed && lines.length > 0 && !isRunning && (
             <button
               onClick={onClear}
               title="Clear terminal"
@@ -370,7 +416,7 @@ export const TerminalPanel = memo(({
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '10px 16px 12px',
+            padding: '10px 16px 8px',
             userSelect: 'text',
             scrollbarWidth: 'thin',
             scrollbarColor: '#313244 transparent',
@@ -414,6 +460,94 @@ export const TerminalPanel = memo(({
             </div>
           )}
         </div>
+      )}
+
+      {/* ─── Interactive Stdin Input Bar ─────────────────────────────────── */}
+      {!isCollapsed && isRunning && (
+        <form
+          onSubmit={handleSendInput}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 12px',
+            borderTop: '1px solid rgba(137, 180, 250, 0.1)',
+            backgroundColor: '#13131e',
+            flexShrink: 0,
+            userSelect: 'none',
+          }}
+        >
+          {/* stdin prompt symbol */}
+          <span
+            style={{
+              color: '#89dceb',
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: '13px',
+              fontWeight: 700,
+              flexShrink: 0,
+              userSelect: 'none',
+            }}
+          >
+            ▶ stdin:
+          </span>
+
+          {/* Input field */}
+          <input
+            ref={inputRef}
+            type="text"
+            value={stdinValue}
+            onChange={(e) => setStdinValue(e.target.value)}
+            placeholder="Type input and press Enter to send…"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(137, 180, 250, 0.06)',
+              border: '1px solid rgba(137, 180, 250, 0.2)',
+              borderRadius: '4px',
+              color: '#cdd6f4',
+              fontSize: '13px',
+              fontFamily: '"JetBrains Mono", monospace',
+              padding: '4px 10px',
+              outline: 'none',
+              transition: 'border-color 0.15s',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(137, 180, 250, 0.5)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(137, 180, 250, 0.2)')}
+          />
+
+          {/* Send button */}
+          <button
+            type="submit"
+            title="Send input (Enter)"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '4px 10px',
+              backgroundColor: 'rgba(137, 220, 235, 0.12)',
+              color: '#89dceb',
+              border: '1px solid rgba(137, 220, 235, 0.25)',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              flexShrink: 0,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(137, 220, 235, 0.22)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(137, 220, 235, 0.12)';
+            }}
+          >
+            <Send size={11} />
+            Send
+          </button>
+        </form>
       )}
 
       <style>{`

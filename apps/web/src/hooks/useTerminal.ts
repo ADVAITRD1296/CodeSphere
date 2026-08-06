@@ -4,7 +4,7 @@ import { SOCKET_EVENTS, ProgrammingLanguage } from '@codesphere/shared';
 
 export interface TerminalLine {
   id: string;
-  type: 'stdout' | 'stderr' | 'info' | 'system';
+  type: 'stdout' | 'stderr' | 'info' | 'system' | 'stdin';
   content: string;
   timestamp: number;
 }
@@ -21,6 +21,7 @@ export function useTerminal(socket: Socket | null) {
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [session, setSession] = useState<TerminalSession | null>(null);
   const isRunningRef = useRef(false);
+  const currentExecutionIdRef = useRef<string | null>(null);
 
   const addLine = useCallback((type: TerminalLine['type'], content: string) => {
     setLines((prev) => [
@@ -37,6 +38,7 @@ export function useTerminal(socket: Socket | null) {
   const clearTerminal = useCallback(() => {
     setLines([]);
     setSession(null);
+    currentExecutionIdRef.current = null;
   }, []);
 
   const runCode = useCallback(
@@ -61,10 +63,49 @@ export function useTerminal(socket: Socket | null) {
     [socket, clearTerminal]
   );
 
+  /**
+   * Send a line of stdin input to the currently running process.
+   * Also echoes the input visually in the terminal output.
+   */
+  const sendInput = useCallback(
+    (input: string) => {
+      const execId = currentExecutionIdRef.current;
+      if (!socket || !execId || !isRunningRef.current) return;
+
+      // Echo the typed input in the terminal so it feels like a real terminal
+      setLines((prev) => [
+        ...prev,
+        {
+          id: `stdin-${Date.now()}`,
+          type: 'stdin',
+          content: `\x1b[36m${input}\x1b[0m`,
+          timestamp: Date.now(),
+        },
+      ]);
+
+      socket.emit(SOCKET_EVENTS.EXECUTION.INPUT, { executionId: execId, input });
+    },
+    [socket]
+  );
+
+  /**
+   * Send a SIGKILL to the currently running process.
+   */
+  const killExecution = useCallback(() => {
+    const execId = currentExecutionIdRef.current;
+    if (!socket || !execId || !isRunningRef.current) return;
+    socket.emit(SOCKET_EVENTS.EXECUTION.KILL, { executionId: execId });
+  }, [socket]);
+
   useEffect(() => {
     if (!socket) return;
 
     const handleStdout = ({ executionId, chunk }: { executionId: string; chunk: string }) => {
+      // Track the current running executionId for stdin / kill
+      if (currentExecutionIdRef.current !== executionId) {
+        currentExecutionIdRef.current = executionId;
+      }
+
       // Split multi-line chunks but preserve ANSI codes
       const parts = chunk.split('\n');
       parts.forEach((part, idx) => {
@@ -112,6 +153,7 @@ export function useTerminal(socket: Socket | null) {
       durationMs: number;
     }) => {
       isRunningRef.current = false;
+      currentExecutionIdRef.current = null;
       setSession((prev) =>
         prev ? { ...prev, isRunning: false, exitCode, durationMs } : null
       );
@@ -145,6 +187,8 @@ export function useTerminal(socket: Socket | null) {
     session,
     runCode,
     clearTerminal,
+    sendInput,
+    killExecution,
     isRunning: isRunningRef.current,
   };
 }
