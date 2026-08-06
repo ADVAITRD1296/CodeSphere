@@ -31,11 +31,16 @@ app.set('trust proxy', 1);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Dynamically reflect request origin so credentials work seamlessly with Vercel and local dev
-    callback(null, true);
+    if (!origin) return callback(null, true);
+    // Strip trailing slash from request origin to match browser origin exactly
+    callback(null, origin.replace(/\/$/, ''));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
+
+app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser());
