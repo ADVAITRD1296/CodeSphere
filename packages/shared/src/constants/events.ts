@@ -9,6 +9,8 @@ export const SOCKET_EVENTS = {
     ROOM_STATE: 'presence:room-state',
     USER_JOINED: 'presence:user-joined',
     USER_LEFT: 'presence:user-left',
+    SET_STATUS: 'presence:set-status',
+    HEARTBEAT: 'presence:heartbeat',
   },
   EXECUTION: {
     SUBMIT: 'execution:submit',

@@ -15,7 +15,8 @@ import {
   ShieldAlert,
   Copy,
   Check,
-  Settings
+  Settings,
+  Users
 } from 'lucide-react';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
@@ -25,7 +26,10 @@ import { TerminalPanel } from '../../../components/terminal/Terminal';
 import { SnapshotPanel } from '../../../components/snapshot/SnapshotPanel';
 import { ChatPanel } from '../../../components/chat/ChatPanel';
 import { WorkspaceSettingsModal } from '../../../components/settings/WorkspaceSettings';
+import { PresenceSidebar } from '../../../components/presence/PresenceSidebar';
+import { UserAvatars } from '../../../components/editor/UserAvatars';
 import { useTerminal } from '../../../hooks/useTerminal';
+import { usePresence } from '../../../hooks/usePresence';
 import { WorkspaceRole, SOCKET_EVENTS, ProgrammingLanguage } from '@codesphere/shared';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
@@ -52,23 +56,31 @@ export default function WorkspaceIDEPage() {
     error
   } = useWorkspaceStore();
 
-  // Socket.io connection (shared for presence + execution)
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const activeFile = activeWorkspace?.files.find(f => f.id === activeFileId) || null;
+  const currentUserMember = activeWorkspace?.members.find(m => m.userId === user?.id);
+  const userRole = currentUserMember?.role || (activeWorkspace?.isPublic ? 'VIEWER' : 'VIEWER');
+
+  // Rich presence hook
+  const { onlineUsers, presenceSummary, socket } = usePresence(
+    workspaceId,
+    user?.id,
+    user?.username,
+    activeFileId || undefined,
+    activeFile?.name || undefined,
+    null,
+    userRole
+  );
 
   // Terminal state
   const { lines, session, runCode, clearTerminal, isRunning } = useTerminal(socket);
   const [terminalCollapsed, setTerminalCollapsed] = useState(false);
   const [terminalHeight, setTerminalHeight] = useState(DEFAULT_TERMINAL_HEIGHT);
 
-  // Snapshot panel state
+  // Panel Toggles
   const [showSnapshot, setShowSnapshot] = useState(false);
-
-  // Chat panel state
   const [showChat, setShowChat] = useState(false);
-
-  // Settings modal state
+  const [showPresenceSidebar, setShowPresenceSidebar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [onlineCount, setOnlineCount] = useState(1);
 
   // Resize logic
   const resizeStateRef = useRef({ isResizing: false, startY: 0, startHeight: 0 });
@@ -85,7 +97,7 @@ export default function WorkspaceIDEPage() {
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!resizeStateRef.current.isResizing) return;
-      const deltaY = resizeStateRef.current.startY - e.clientY; // dragging up = bigger
+      const deltaY = resizeStateRef.current.startY - e.clientY;
       const newHeight = Math.min(
         MAX_TERMINAL_HEIGHT,
         Math.max(MIN_TERMINAL_HEIGHT, resizeStateRef.current.startHeight + deltaY)
@@ -123,36 +135,6 @@ export default function WorkspaceIDEPage() {
     });
   }, [workspaceId]);
 
-  // Setup shared Socket.io connection
-  useEffect(() => {
-    if (!user || !workspaceId) return;
-
-    const sock = io(SOCKET_URL, {
-      withCredentials: true,
-      transports: ['websocket'],
-    });
-
-    sock.on('connect', () => {
-      sock.emit(SOCKET_EVENTS.COLLABORATION.JOIN_ROOM, {
-        workspaceId,
-        userId: user.id,
-        username: user.username,
-        activeFileId,
-      });
-    });
-
-    sock.on(SOCKET_EVENTS.PRESENCE.ROOM_STATE, (users: any[]) => {
-      setOnlineCount(users.length);
-    });
-
-    setSocket(sock);
-
-    return () => {
-      sock.disconnect();
-      setSocket(null);
-    };
-  }, [user?.id, workspaceId]);
-
   if (isLoading || !activeWorkspace) {
     return (
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#94a3b8' }}>
@@ -177,11 +159,7 @@ export default function WorkspaceIDEPage() {
     );
   }
 
-  const currentUserMember = activeWorkspace.members.find(m => m.userId === user?.id);
-  const userRole = currentUserMember?.role || (activeWorkspace.isPublic ? 'VIEWER' : 'VIEWER');
   const isReadOnly = userRole === 'VIEWER';
-
-  const activeFile = activeWorkspace.files.find(f => f.id === activeFileId) || null;
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,30 +207,33 @@ export default function WorkspaceIDEPage() {
 
         {/* Header Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Member Avatars */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            {activeWorkspace.members.map((m) => (
-              <div
-                key={m.id}
-                title={`${m.user.username} (${m.role})`}
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  border: '2px solid #181825',
-                  marginLeft: '-6px',
-                }}
-              >
-                {m.user.username.charAt(0).toUpperCase()}
-              </div>
-            ))}
-          </div>
+          {/* Member Presence Avatars */}
+          <UserAvatars
+            onlineUsers={onlineUsers}
+            currentUserId={user?.id}
+            onTogglePresenceSidebar={() => setShowPresenceSidebar(v => !v)}
+          />
+
+          {/* Presence Drawer Toggle Button */}
+          <button
+            onClick={() => setShowPresenceSidebar(v => !v)}
+            title="Toggle Live Members Presence"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 10px',
+              backgroundColor: showPresenceSidebar ? 'rgba(137,180,250,0.15)' : 'transparent',
+              color: showPresenceSidebar ? '#89b4fa' : '#9399b2',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              cursor: 'pointer'
+            }}
+          >
+            <Users size={14} />
+            <span>{presenceSummary.totalOnline} Active</span>
+          </button>
 
           {/* Quick Run Button in Header */}
           {!isReadOnly && activeFile && (
@@ -398,6 +379,14 @@ export default function WorkspaceIDEPage() {
               username={user?.username}
             />
           </div>
+
+          {/* Right Live Presence Sidebar */}
+          {showPresenceSidebar && (
+            <PresenceSidebar
+              summary={presenceSummary}
+              currentUserId={user?.id}
+            />
+          )}
         </div>
 
         {/* Terminal Panel */}
@@ -439,7 +428,7 @@ export default function WorkspaceIDEPage() {
           socket={socket}
           workspaceId={workspaceId}
           currentUserId={user?.id || ''}
-          onlineCount={onlineCount}
+          onlineCount={presenceSummary.totalOnline}
           onClose={() => setShowChat(false)}
         />
       )}
@@ -449,63 +438,62 @@ export default function WorkspaceIDEPage() {
         <WorkspaceSettingsModal
           workspaceId={workspaceId}
           initialName={activeWorkspace.name}
-          initialDescription={activeWorkspace.description ?? null}
+          initialDescription={activeWorkspace.description || ''}
           initialIsPublic={activeWorkspace.isPublic}
           isOwner={userRole === 'OWNER'}
           onClose={() => setShowSettings(false)}
           onDeleted={() => router.push('/dashboard')}
-          onUpdated={() => {
-            fetchWorkspace(workspaceId);
-            setShowSettings(false);
-          }}
+          onUpdated={() => fetchWorkspace(workspaceId)}
         />
       )}
 
-      {/* Invite Modal */}
+      {/* Invite Member Modal */}
       {showInviteModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div className="glass-panel" style={{ width: '420px', padding: '28px' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '16px' }}>Invite Collaborator</h3>
+        <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserPlus size={18} color="#3b82f6" /> Add Workspace Member
+            </h3>
 
             {inviteSuccess && (
-              <div style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399', padding: '10px', borderRadius: '6px', marginBottom: '16px', fontSize: '0.85rem' }}>
+              <div style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '16px' }}>
                 {inviteSuccess}
               </div>
             )}
+
             {inviteError && (
-              <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '10px', borderRadius: '6px', marginBottom: '16px', fontSize: '0.85rem' }}>
+              <div style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '16px' }}>
                 {inviteError}
               </div>
             )}
 
-            <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#9399b2', marginBottom: '6px' }}>User Email or Username</label>
+            <form onSubmit={handleInvite}>
+              <div style={{ marginBottom: '16px' }}>
+                <label className="form-label">Email or Username</label>
                 <input
                   type="text"
-                  required
                   className="input-field"
-                  placeholder="collaborator_username"
+                  placeholder="e.g. alex@example.com or alex"
                   value={inviteIdentifier}
                   onChange={(e) => setInviteIdentifier(e.target.value)}
+                  required
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#9399b2', marginBottom: '6px' }}>Assigned Role</label>
+              <div style={{ marginBottom: '24px' }}>
+                <label className="form-label">Role Permission</label>
                 <select
                   className="input-field"
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as WorkspaceRole)}
-                  style={{ backgroundColor: '#1e1e2e' }}
                 >
-                  <option value="EDITOR">Editor (Read &amp; Write)</option>
-                  <option value="VIEWER">Viewer (Read Only)</option>
+                  <option value="EDITOR">Editor (Can edit code & execute)</option>
+                  <option value="VIEWER">Viewer (Read-only access)</option>
                 </select>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
-                <button type="button" onClick={() => setShowInviteModal(false)} className="btn-secondary">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowInviteModal(false)}>
                   Done
                 </button>
                 <button type="submit" className="btn-primary">

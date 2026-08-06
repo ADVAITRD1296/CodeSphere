@@ -14,8 +14,15 @@ interface RoomUser {
   userId: string;
   username: string;
   color: string;
+  status: 'ONLINE' | 'IDLE' | 'OFFLINE' | 'IN_VOICE' | 'SHARING_SCREEN';
+  activity: 'EDITING' | 'VIEWING' | 'IDLE';
   cursor?: { line: number; column: number };
   activeFileId?: string;
+  activeFileName?: string;
+  role?: string;
+  lastActive: string;
+  isInVoice?: boolean;
+  isInVideo?: boolean;
 }
 
 const roomPresence = new Map<string, Map<string, RoomUser>>();
@@ -33,6 +40,30 @@ function getRandomColor(userId: string): string {
   return PRESET_COLORS[index];
 }
 
+function broadcastRoomPresence(io: SocketIOServer, workspaceId: string) {
+  const roomMap = roomPresence.get(workspaceId);
+  if (!roomMap) return;
+
+  const users = Array.from(roomMap.values());
+  const editingCount = users.filter(u => u.activity === 'EDITING').length;
+  const viewingCount = users.filter(u => u.activity === 'VIEWING').length;
+  const voiceCount = users.filter(u => u.isInVoice || u.status === 'IN_VOICE').length;
+  const videoCount = users.filter(u => u.isInVideo || u.status === 'SHARING_SCREEN').length;
+
+  const summary = {
+    workspaceId,
+    totalOnline: users.filter(u => u.status !== 'OFFLINE').length,
+    totalOffline: 0,
+    editingCount,
+    viewingCount,
+    voiceCount,
+    videoCount,
+    users
+  };
+
+  io.to(workspaceId).emit(SOCKET_EVENTS.PRESENCE.ROOM_STATE, summary);
+}
+
 export function setupSocketGateway(server: http.Server) {
   const io = new SocketIOServer(server, {
     cors: {
@@ -45,7 +76,7 @@ export function setupSocketGateway(server: http.Server) {
     let currentWorkspaceId: string | null = null;
     let currentUser: RoomUser | null = null;
 
-    socket.on(SOCKET_EVENTS.COLLABORATION.JOIN_ROOM, ({ workspaceId, userId, username, activeFileId }) => {
+    socket.on(SOCKET_EVENTS.COLLABORATION.JOIN_ROOM, ({ workspaceId, userId, username, activeFileId, activeFileName, role }) => {
       currentWorkspaceId = workspaceId;
       socket.join(workspaceId);
 
@@ -59,27 +90,48 @@ export function setupSocketGateway(server: http.Server) {
         userId,
         username,
         color: getRandomColor(userId),
-        activeFileId
+        status: 'ONLINE',
+        activity: 'VIEWING',
+        activeFileId,
+        activeFileName,
+        role: role || 'EDITOR',
+        lastActive: new Date().toISOString()
       };
 
       roomMap.set(socket.id, currentUser);
-
-      // Broadcast current room presence to all clients in room
-      const activeUsers = Array.from(roomMap.values());
-      io.to(workspaceId).emit(SOCKET_EVENTS.PRESENCE.ROOM_STATE, activeUsers);
+      broadcastRoomPresence(io, workspaceId);
     });
 
-    socket.on(SOCKET_EVENTS.PRESENCE.UPDATE, ({ cursor, activeFileId }) => {
+    socket.on(SOCKET_EVENTS.PRESENCE.UPDATE, ({ cursor, activeFileId, activeFileName, isEditing, status }) => {
       if (currentWorkspaceId && currentUser) {
-        currentUser.cursor = cursor;
-        if (activeFileId) currentUser.activeFileId = activeFileId;
+        if (cursor) currentUser.cursor = cursor;
+        if (activeFileId !== undefined) currentUser.activeFileId = activeFileId;
+        if (activeFileName !== undefined) currentUser.activeFileName = activeFileName;
+        if (isEditing !== undefined) {
+          currentUser.activity = isEditing ? 'EDITING' : 'VIEWING';
+        }
+        if (status) currentUser.status = status;
+        currentUser.lastActive = new Date().toISOString();
 
         const roomMap = roomPresence.get(currentWorkspaceId);
         if (roomMap) {
           roomMap.set(socket.id, currentUser);
-          const activeUsers = Array.from(roomMap.values());
-          socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.PRESENCE.ROOM_STATE, activeUsers);
+          broadcastRoomPresence(io, currentWorkspaceId);
         }
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.PRESENCE.SET_STATUS, ({ status }) => {
+      if (currentWorkspaceId && currentUser) {
+        currentUser.status = status;
+        currentUser.lastActive = new Date().toISOString();
+        broadcastRoomPresence(io, currentWorkspaceId);
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.PRESENCE.HEARTBEAT, () => {
+      if (currentWorkspaceId && currentUser) {
+        currentUser.lastActive = new Date().toISOString();
       }
     });
 
@@ -358,8 +410,7 @@ await runHostExecution();
         if (roomMap.size === 0) {
           roomPresence.delete(currentWorkspaceId);
         } else {
-          const activeUsers = Array.from(roomMap.values());
-          io.to(currentWorkspaceId).emit(SOCKET_EVENTS.PRESENCE.ROOM_STATE, activeUsers);
+          broadcastRoomPresence(io, currentWorkspaceId);
         }
       }
     });
