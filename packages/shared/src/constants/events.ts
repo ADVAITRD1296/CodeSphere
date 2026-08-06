@@ -47,5 +47,11 @@ export const SOCKET_EVENTS = {
     SYNC: 'lock:sync',
     ERROR: 'lock:error',
   },
+  WHITEBOARD: {
+    DRAW: 'whiteboard:draw',
+    SYNC: 'whiteboard:sync',
+    CLEAR: 'whiteboard:clear',
+  },
 } as const;
+
 

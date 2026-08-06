@@ -4,7 +4,7 @@ import { spawn, spawnSync, ChildProcess } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { SOCKET_EVENTS, ChatMessageDto, ProgrammingLanguage, LineLockInfo } from '@codesphere/shared';
+import { SOCKET_EVENTS, ChatMessageDto, ProgrammingLanguage, LineLockInfo, WhiteboardElement } from '@codesphere/shared';
 
 
 // Map executionId -> running child process for stdin forwarding
@@ -30,6 +30,10 @@ const roomPresence = new Map<string, Map<string, RoomUser>>();
 
 // Map workspaceId -> Map<lockId, LineLockInfo>
 const roomFileLocks = new Map<string, Map<string, LineLockInfo>>();
+
+// Map workspaceId -> WhiteboardElement[]
+const roomWhiteboards = new Map<string, WhiteboardElement[]>();
+
 
 const PRESET_COLORS = [
   '#f38ba8', '#fab387', '#f9e2af', '#a6e3a1', '#94e2d5', '#89dceb', '#74c7ec', '#89b4fa', '#cba6f7'
@@ -129,7 +133,32 @@ export function setupSocketGateway(server: http.Server) {
       } else {
         broadcastFileLocks(io, workspaceId);
       }
+
+      // Send existing whiteboard canvas state to joining user
+      const existingElements = roomWhiteboards.get(workspaceId) || [];
+      socket.emit(SOCKET_EVENTS.WHITEBOARD.SYNC, { elements: existingElements });
     });
+
+    // ─── Collaborative Whiteboard Handlers ─────────────────────────────────────
+    socket.on(SOCKET_EVENTS.WHITEBOARD.DRAW, ({ element }: { element: WhiteboardElement }) => {
+      if (!currentWorkspaceId || !currentUser || !element) return;
+
+      if (!roomWhiteboards.has(currentWorkspaceId)) {
+        roomWhiteboards.set(currentWorkspaceId, []);
+      }
+      const elements = roomWhiteboards.get(currentWorkspaceId)!;
+      elements.push(element);
+
+      // Broadcast new element to other room members
+      socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.WHITEBOARD.DRAW, { element });
+    });
+
+    socket.on(SOCKET_EVENTS.WHITEBOARD.CLEAR, () => {
+      if (!currentWorkspaceId || !currentUser) return;
+      roomWhiteboards.set(currentWorkspaceId, []);
+      io.to(currentWorkspaceId).emit(SOCKET_EVENTS.WHITEBOARD.CLEAR);
+    });
+
 
     // ─── Line Locking System Handlers ──────────────────────────────────────────
     socket.on(SOCKET_EVENTS.LOCK.REQUEST, ({ fileId, startLine, endLine }) => {
@@ -658,9 +687,11 @@ await runHostExecution();
           if (roomMap.size === 0) {
             roomPresence.delete(currentWorkspaceId);
             roomFileLocks.delete(currentWorkspaceId);
+            roomWhiteboards.delete(currentWorkspaceId);
           } else {
             broadcastRoomPresence(io, currentWorkspaceId);
           }
+
         }
       }
     });

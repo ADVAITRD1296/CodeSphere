@@ -17,7 +17,8 @@ import {
   Check,
   Settings,
   Users,
-  Video
+  Video,
+  Palette
 } from 'lucide-react';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
@@ -31,12 +32,15 @@ import { PresenceSidebar } from '../../../components/presence/PresenceSidebar';
 import { UserAvatars } from '../../../components/editor/UserAvatars';
 import { VoiceCallControl } from '../../../components/voice/VoiceCallControl';
 import { VideoConferenceModal } from '../../../components/video/VideoConferenceModal';
+import { WhiteboardModal } from '../../../components/whiteboard/WhiteboardModal';
 import { useTerminal } from '../../../hooks/useTerminal';
 import { usePresence } from '../../../hooks/usePresence';
 import { useVoiceCall } from '../../../hooks/useVoiceCall';
 import { useVideoCall } from '../../../hooks/useVideoCall';
 import { useLineLocking } from '../../../hooks/useLineLocking';
+import { useWhiteboard } from '../../../hooks/useWhiteboard';
 import { WorkspaceRole, SOCKET_EVENTS, ProgrammingLanguage } from '@codesphere/shared';
+
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
 const MIN_TERMINAL_HEIGHT = 38;
@@ -120,8 +124,14 @@ export default function WorkspaceIDEPage() {
     isRangeLockedByOther
   } = useLineLocking(workspaceId, activeFile?.id || null, socket, user?.id);
 
-  // Terminal state
+  // Collaborative Whiteboard hook
+  const {
+    elements: whiteboardElements,
+    addElement: addWhiteboardElement,
+    clearWhiteboard
+  } = useWhiteboard(workspaceId, socket);
 
+  // Terminal state
   const { lines, session, runCode, clearTerminal, isRunning } = useTerminal(socket);
   const [terminalCollapsed, setTerminalCollapsed] = useState(false);
   const [terminalHeight, setTerminalHeight] = useState(DEFAULT_TERMINAL_HEIGHT);
@@ -132,6 +142,8 @@ export default function WorkspaceIDEPage() {
   const [showPresenceSidebar, setShowPresenceSidebar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showWhiteboardModal, setShowWhiteboardModal] = useState(false);
+
 
   // Resize logic
   const resizeStateRef = useRef({ isResizing: false, startY: 0, startHeight: 0 });
@@ -282,7 +294,17 @@ export default function WorkspaceIDEPage() {
             <Video size={13} /> {isInVideo ? 'In Meeting' : 'Video'}
           </button>
 
+          {/* Whiteboard Button */}
+          <button
+            onClick={() => setShowWhiteboardModal(true)}
+            className={`ide-pill-btn${showWhiteboardModal ? ' active' : ''}`}
+            title="Open Collaborative Whiteboard"
+          >
+            <Palette size={13} color="var(--mauve)" /> Whiteboard
+          </button>
+
           <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
+
 
           {/* Member Presence Avatars */}
           <UserAvatars
@@ -487,6 +509,20 @@ export default function WorkspaceIDEPage() {
           onClose={() => setShowVideoModal(false)}
         />
       )}
+
+      {/* Collaborative Whiteboard Modal */}
+      {showWhiteboardModal && (
+        <WhiteboardModal
+          isOpen={showWhiteboardModal}
+          elements={whiteboardElements}
+          currentUserId={user?.id || ''}
+          currentUsername={user?.username || 'You'}
+          onAddElement={addWhiteboardElement}
+          onClear={clearWhiteboard}
+          onClose={() => setShowWhiteboardModal(false)}
+        />
+      )}
+
 
       {/* Invite Member Modal */}
       {showInviteModal && (

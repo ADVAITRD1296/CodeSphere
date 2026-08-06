@@ -63,3 +63,23 @@ export interface LockRequestDto {
   endLine: number;
 }
 
+export type WhiteboardTool = 'pen' | 'line' | 'arrow' | 'rectangle' | 'ellipse' | 'text' | 'eraser';
+
+export interface WhiteboardPoint {
+  x: number;
+  y: number;
+}
+
+export interface WhiteboardElement {
+  id: string;
+  tool: WhiteboardTool;
+  points: WhiteboardPoint[];
+  color: string;
+  strokeWidth: number;
+  text?: string;
+  userId: string;
+  username: string;
+  createdAt: string;
+}
+
+
