@@ -1,0 +1,31 @@
+{
+  "name": "@codesphere/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@codesphere/shared": "*",
+    "@monaco-editor/react": "^4.6.0",
+    "lucide-react": "^0.344.0",
+    "monaco-editor": "^0.47.0",
+    "next": "14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "socket.io-client": "^4.7.4",
+    "y-monaco": "^0.1.5",
+    "y-websocket": "^2.0.0",
+    "yjs": "^13.6.14",
+    "zustand": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "typescript": "^5.3.3"
+  }
+}

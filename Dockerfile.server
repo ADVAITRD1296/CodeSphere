@@ -1,0 +1,44 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy root and workspace config files
+COPY package*.json ./
+COPY packages/shared/package*.json ./packages/shared/
+COPY apps/server/package*.json ./apps/server/
+
+# Install dependencies across monorepo
+RUN npm ci
+
+# Copy source code
+COPY packages/shared ./packages/shared
+COPY apps/server ./apps/server
+
+# Build shared package and server
+RUN npm run build --workspace=@codesphere/shared
+RUN cd apps/server && npx prisma generate && npm run build
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Install docker CLI for code execution engine inside container
+RUN apk add --no-linux-headers --no-cache docker-cli
+
+ENV NODE_ENV=production
+ENV PORT=4000
+
+COPY package*.json ./
+COPY packages/shared/package*.json ./packages/shared/
+COPY apps/server/package*.json ./apps/server/
+
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/apps/server/dist ./apps/server/dist
+COPY --from=builder /app/apps/server/prisma ./apps/server/prisma
+COPY --from=builder /app/apps/server/node_modules/.prisma ./apps/server/node_modules/.prisma
+
+EXPOSE 4000
+
+CMD ["sh", "-c", "cd apps/server && npx prisma db push && node dist/index.js"]

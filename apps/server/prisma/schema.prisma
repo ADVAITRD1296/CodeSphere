@@ -1,0 +1,129 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String            @id @default(uuid())
+  email         String            @unique
+  username      String            @unique
+  passwordHash  String
+  avatarUrl     String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  
+  memberships   WorkspaceMember[]
+  snapshots     FileSnapshot[]
+  executionLogs ExecutionLog[]
+  activityLogs  ActivityLog[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Workspace {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  isPublic    Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  
+  members     WorkspaceMember[]
+  folders     ProjectFolder[]
+  files       ProjectFile[]
+  snapshots   FileSnapshot[]
+  activities  ActivityLog[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        String    @default("EDITOR") // OWNER, EDITOR, VIEWER
+  joinedAt    DateTime  @default(now())
+  
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([workspaceId, userId])
+}
+
+model ProjectFolder {
+  id          String          @id @default(uuid())
+  name        String
+  workspaceId String
+  parentId    String?
+  createdAt   DateTime        @default(now())
+  
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parent      ProjectFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    ProjectFolder[] @relation("FolderHierarchy")
+  files       ProjectFile[]
+}
+
+model ProjectFile {
+  id          String         @id @default(uuid())
+  name        String
+  language    String         @default("JAVASCRIPT") // JAVASCRIPT, TYPESCRIPT, PYTHON, CPP, GO
+  workspaceId String
+  folderId    String?
+  content     String         @default("")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  folder      ProjectFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  snapshots   FileSnapshot[]
+}
+
+model FileSnapshot {
+  id          String      @id @default(uuid())
+  fileId      String
+  workspaceId String
+  createdById String
+  message     String
+  content     String
+  createdAt   DateTime    @default(now())
+  
+  file        ProjectFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy   User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model ExecutionLog {
+  id          String    @id @default(uuid())
+  userId      String
+  language    String
+  code        String
+  stdout      String?
+  stderr      String?
+  exitCode    Int
+  durationMs  Int
+  createdAt   DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id          String    @id @default(uuid())
+  workspaceId String
+  userId      String
+  action      String
+  metadata    String?
+  createdAt   DateTime  @default(now())
+  
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
