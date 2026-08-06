@@ -35,6 +35,7 @@ import { useTerminal } from '../../../hooks/useTerminal';
 import { usePresence } from '../../../hooks/usePresence';
 import { useVoiceCall } from '../../../hooks/useVoiceCall';
 import { useVideoCall } from '../../../hooks/useVideoCall';
+import { useLineLocking } from '../../../hooks/useLineLocking';
 import { WorkspaceRole, SOCKET_EVENTS, ProgrammingLanguage } from '@codesphere/shared';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
@@ -108,7 +109,19 @@ export default function WorkspaceIDEPage() {
     toggleScreenShare
   } = useVideoCall(socket, workspaceId);
 
+  // Granular Line Locking hook
+  const {
+    locks,
+    myLocks,
+    lockError,
+    requestLock,
+    releaseLock,
+    forceReleaseLock,
+    isRangeLockedByOther
+  } = useLineLocking(workspaceId, activeFile?.id || null, socket, user?.id);
+
   // Terminal state
+
   const { lines, session, runCode, clearTerminal, isRunning } = useTerminal(socket);
   const [terminalCollapsed, setTerminalCollapsed] = useState(false);
   const [terminalHeight, setTerminalHeight] = useState(DEFAULT_TERMINAL_HEIGHT);
@@ -370,8 +383,18 @@ export default function WorkspaceIDEPage() {
               onChangeContent={(val) => activeFile && updateLocalFileContent(activeFile.id, val)}
               isReadOnly={isReadOnly}
               username={user?.username}
+              currentUserId={user?.id}
+              userRole={userRole}
+              locks={locks}
+              myLocks={myLocks}
+              lockError={lockError}
+              onRequestLock={requestLock}
+              onReleaseLock={releaseLock}
+              onForceReleaseLock={forceReleaseLock}
+              isRangeLockedByOther={isRangeLockedByOther}
             />
           </div>
+
 
           {/* Right Live Presence Sidebar */}
           {showPresenceSidebar && (

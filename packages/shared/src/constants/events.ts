@@ -40,4 +40,12 @@ export const SOCKET_EVENTS = {
     SEND_MESSAGE: 'chat:send-message',
     NEW_MESSAGE: 'chat:new-message',
   },
+  LOCK: {
+    REQUEST: 'lock:request',
+    RELEASE: 'lock:release',
+    FORCE_RELEASE: 'lock:force-release',
+    SYNC: 'lock:sync',
+    ERROR: 'lock:error',
+  },
 } as const;
+

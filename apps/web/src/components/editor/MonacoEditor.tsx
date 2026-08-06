@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Editor, { OnMount, BeforeMount } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
-import { X, FileCode, Wifi, WifiOff } from 'lucide-react';
-import { ProjectFileDto, ProgrammingLanguage } from '@codesphere/shared';
+import { X, FileCode, Wifi, WifiOff, Lock, Unlock, ShieldAlert } from 'lucide-react';
+import { ProjectFileDto, ProgrammingLanguage, LineLockInfo } from '@codesphere/shared';
 import { useYjsProvider } from '../../hooks/useYjsProvider';
 
 interface MonacoEditorProps {
@@ -17,7 +17,19 @@ interface MonacoEditorProps {
   isReadOnly?: boolean;
   username?: string;
   userColor?: string;
+  currentUserId?: string;
+  userRole?: string;
+
+  // Line Locking Props
+  locks?: LineLockInfo[];
+  myLocks?: LineLockInfo[];
+  lockError?: string | null;
+  onRequestLock?: (startLine: number, endLine: number) => void;
+  onReleaseLock?: (lockId: string) => void;
+  onForceReleaseLock?: (lockId: string) => void;
+  isRangeLockedByOther?: (startLine: number, endLine: number) => LineLockInfo | null;
 }
+
 
 export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
   activeFile,
@@ -28,9 +40,21 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
   onChangeContent,
   isReadOnly = false,
   username,
-  userColor
+  userColor,
+  currentUserId,
+  userRole = 'EDITOR',
+  locks = [],
+  myLocks = [],
+  lockError = null,
+  onRequestLock,
+  onReleaseLock,
+  onForceReleaseLock,
+  isRangeLockedByOther
 }) => {
   const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
+  const [interceptBanner, setInterceptBanner] = useState<string | null>(null);
+  const decorationsCollectionRef = useRef<editor.IEditorDecorationsCollection | null>(null);
+  const bannerTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { isSynced } = useYjsProvider(
     activeFile ? activeFile.id : null,
@@ -38,6 +62,83 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
     username,
     userColor
   );
+
+  // ─── Monaco Line Lock Visual Decorations Effect ─────────────────────────────
+  useEffect(() => {
+    if (!editorInstance || !activeFile) return;
+
+    const monaco = (window as any).monaco;
+    if (!monaco) return;
+
+    const fileLocks = locks.filter(l => l.fileId === activeFile.id);
+    const newDecorations: editor.IModelDeltaDecoration[] = fileLocks.map(lock => {
+      const isOwn = lock.userId === currentUserId;
+      return {
+        range: new monaco.Range(lock.startLine, 1, lock.endLine, 1),
+        options: {
+          isWholeLine: true,
+          className: isOwn ? 'monaco-line-lock-highlight-own' : 'monaco-line-lock-highlight',
+          glyphMarginClassName: 'monaco-line-lock-glyph',
+          hoverMessage: {
+            value: `🔒 **${isOwn ? 'Your Lock' : `Locked by ${lock.username}`}** (Lines ${lock.startLine}–${lock.endLine})`
+          }
+        }
+      };
+    });
+
+    if (!decorationsCollectionRef.current) {
+      decorationsCollectionRef.current = editorInstance.createDecorationsCollection(newDecorations);
+    } else {
+      decorationsCollectionRef.current.set(newDecorations);
+    }
+  }, [editorInstance, activeFile, locks, currentUserId]);
+
+  // ─── Keydown Edit Interception Guard ───────────────────────────────────────
+  useEffect(() => {
+    if (!editorInstance || !isRangeLockedByOther) return;
+
+    const disposable = editorInstance.onKeyDown((e) => {
+      // Ignore navigation-only keys (arrows, ctrl, meta, alt, shift, escape)
+      const navKeys = [15, 16, 17, 18, 9, 2, 3, 4, 5, 89, 90]; // Monaco KeyCodes
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        // If meta/ctrl + char (like typing Ctrl+V, Ctrl+X), check selection
+      }
+
+      const selection = editorInstance.getSelection();
+      if (!selection) return;
+
+      const startLine = selection.startLineNumber;
+      const endLine = selection.endLineNumber;
+
+      const lock = isRangeLockedByOther(startLine, endLine);
+      if (lock) {
+        // Intercept and prevent write action on locked lines!
+        e.preventDefault();
+        e.stopPropagation();
+
+        const msg = `🔒 Lines ${lock.startLine}–${lock.endLine} locked by ${lock.username}`;
+        setInterceptBanner(msg);
+
+        if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+        bannerTimerRef.current = setTimeout(() => setInterceptBanner(null), 3000);
+      }
+    });
+
+    return () => {
+      disposable.dispose();
+      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    };
+  }, [editorInstance, isRangeLockedByOther]);
+
+  // Handle locking currently selected lines or cursor line
+  const handleLockSelectedLines = () => {
+    if (!editorInstance || !onRequestLock) return;
+    const selection = editorInstance.getSelection();
+    if (selection) {
+      onRequestLock(selection.startLineNumber, selection.endLineNumber);
+    }
+  };
+
 
   const getMonacoLanguage = (lang: ProgrammingLanguage): string => {
     switch (lang) {
@@ -284,17 +385,66 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
           })}
         </div>
 
-        {/* Sync Status Badge */}
-        {activeFile && (
-          <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: isSynced ? '#a6e3a1' : '#fab387' }}>
-            {isSynced ? <Wifi size={14} /> : <WifiOff size={14} />}
-            <span>{isSynced ? 'Live Sync Active' : 'Connecting...'}</span>
-          </div>
-        )}
+        {/* Right Tab Bar Actions (Line Locks + Sync Status) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '12px' }}>
+          {activeFile && !isReadOnly && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {/* Lock Selected Lines Button */}
+              <button
+                onClick={handleLockSelectedLines}
+                className="ide-pill-btn"
+                title="Lock selected line range to prevent concurrent edits"
+                style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+              >
+                <Lock size={12} color="var(--mauve)" /> Lock Lines
+              </button>
+
+              {/* Release Active Locks */}
+              {myLocks.length > 0 && (
+                <button
+                  onClick={() => myLocks.forEach(l => onReleaseLock && onReleaseLock(l.lockId))}
+                  className="ide-pill-btn"
+                  title="Release your active line locks on this file"
+                  style={{ padding: '3px 8px', fontSize: '0.74rem', color: 'var(--green)', borderColor: 'rgba(166,227,161,0.3)' }}
+                >
+                  <Unlock size={12} /> Unlock ({myLocks.length})
+                </button>
+              )}
+
+              {/* Admin Force Unlock */}
+              {userRole === 'OWNER' && locks.filter(l => l.userId !== currentUserId).length > 0 && (
+                <button
+                  onClick={() => locks.filter(l => l.userId !== currentUserId).forEach(l => onForceReleaseLock && onForceReleaseLock(l.lockId))}
+                  className="ide-pill-btn"
+                  title="Force unlock all lines locked by other users (Owner override)"
+                  style={{ padding: '3px 8px', fontSize: '0.74rem', color: 'var(--red)', borderColor: 'rgba(243,139,168,0.3)' }}
+                >
+                  <ShieldAlert size={12} /> Force Unlock
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Sync Status Badge */}
+          {activeFile && (
+            <div style={{ padding: '0 8px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', color: isSynced ? '#a6e3a1' : '#fab387' }}>
+              {isSynced ? <Wifi size={13} /> : <WifiOff size={13} />}
+              <span>{isSynced ? 'Live Sync' : 'Connecting'}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Monaco Container */}
       <div style={{ flex: 1, position: 'relative' }}>
+        {/* Intercept / Conflict Warning Banner */}
+        {(interceptBanner || lockError) && (
+          <div className="lock-toast-banner">
+            <Lock size={16} />
+            <span>{interceptBanner || lockError}</span>
+          </div>
+        )}
+
         {activeFile ? (
           <Editor
             height="100%"
@@ -309,6 +459,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
               fontSize: 14,
               fontFamily: "'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace",
               fontLigatures: true,
+              glyphMargin: true,
               minimap: { enabled: true },
               scrollBeyondLastLine: false,
               automaticLayout: true,
@@ -319,7 +470,6 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
               bracketPairColorization: { enabled: true },
               smoothScrolling: true,
               cursorBlinking: 'smooth',
-              // ─── VS Code-like IntelliSense & Suggestions ──────────
               suggestOnTriggerCharacters: true,
               acceptSuggestionOnEnter: 'on',
               tabCompletion: 'on',
@@ -389,3 +539,4 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
     </div>
   );
 };
+

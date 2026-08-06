@@ -4,7 +4,8 @@ import { spawn, spawnSync, ChildProcess } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { SOCKET_EVENTS, ChatMessageDto, ProgrammingLanguage } from '@codesphere/shared';
+import { SOCKET_EVENTS, ChatMessageDto, ProgrammingLanguage, LineLockInfo } from '@codesphere/shared';
+
 
 // Map executionId -> running child process for stdin forwarding
 const runningProcesses = new Map<string, ChildProcess>();
@@ -26,6 +27,9 @@ interface RoomUser {
 }
 
 const roomPresence = new Map<string, Map<string, RoomUser>>();
+
+// Map workspaceId -> Map<lockId, LineLockInfo>
+const roomFileLocks = new Map<string, Map<string, LineLockInfo>>();
 
 const PRESET_COLORS = [
   '#f38ba8', '#fab387', '#f9e2af', '#a6e3a1', '#94e2d5', '#89dceb', '#74c7ec', '#89b4fa', '#cba6f7'
@@ -64,6 +68,24 @@ function broadcastRoomPresence(io: SocketIOServer, workspaceId: string) {
   io.to(workspaceId).emit(SOCKET_EVENTS.PRESENCE.ROOM_STATE, summary);
 }
 
+function broadcastFileLocks(io: SocketIOServer, workspaceId: string, fileId?: string) {
+  const locksMap = roomFileLocks.get(workspaceId);
+  const allLocks = locksMap ? Array.from(locksMap.values()) : [];
+
+  if (fileId) {
+    const fileLocks = allLocks.filter(l => l.fileId === fileId);
+    io.to(workspaceId).emit(SOCKET_EVENTS.LOCK.SYNC, { fileId, locks: fileLocks });
+  } else {
+    // Broadcast all file locks grouped by fileId
+    const fileIds = Array.from(new Set(allLocks.map(l => l.fileId)));
+    fileIds.forEach(fid => {
+      const fileLocks = allLocks.filter(l => l.fileId === fid);
+      io.to(workspaceId).emit(SOCKET_EVENTS.LOCK.SYNC, { fileId: fid, locks: fileLocks });
+    });
+  }
+}
+
+
 export function setupSocketGateway(server: http.Server) {
   const io = new SocketIOServer(server, {
     cors: {
@@ -100,7 +122,93 @@ export function setupSocketGateway(server: http.Server) {
 
       roomMap.set(socket.id, currentUser);
       broadcastRoomPresence(io, workspaceId);
+
+      // Send existing active line locks to joining user
+      if (activeFileId) {
+        broadcastFileLocks(io, workspaceId, activeFileId);
+      } else {
+        broadcastFileLocks(io, workspaceId);
+      }
     });
+
+    // ─── Line Locking System Handlers ──────────────────────────────────────────
+    socket.on(SOCKET_EVENTS.LOCK.REQUEST, ({ fileId, startLine, endLine }) => {
+      if (!currentWorkspaceId || !currentUser) return;
+
+      const normStart = Math.min(startLine, endLine);
+      const normEnd = Math.max(startLine, endLine);
+
+      if (normStart < 1 || normEnd < 1) {
+        socket.emit(SOCKET_EVENTS.LOCK.ERROR, { message: 'Invalid line range requested.' });
+        return;
+      }
+
+      if (!roomFileLocks.has(currentWorkspaceId)) {
+        roomFileLocks.set(currentWorkspaceId, new Map());
+      }
+      const locksMap = roomFileLocks.get(currentWorkspaceId)!;
+
+      // Check range overlap with existing locks on the same file owned by another user
+      const existingLocks = Array.from(locksMap.values()).filter(l => l.fileId === fileId);
+      const conflictingLock = existingLocks.find(lock => {
+        if (lock.userId === currentUser!.userId) return false; // Allow extending own lock
+        return lock.startLine <= normEnd && lock.endLine >= normStart;
+      });
+
+      if (conflictingLock) {
+        socket.emit(SOCKET_EVENTS.LOCK.ERROR, {
+          message: `Lines ${conflictingLock.startLine}–${conflictingLock.endLine} are currently locked by ${conflictingLock.username}.`,
+          conflictingLock
+        });
+        return;
+      }
+
+      // Create new line lock record
+      const lockId = `lock_${Math.random().toString(36).substring(2, 9)}`;
+      const lockInfo = {
+        lockId,
+        workspaceId: currentWorkspaceId,
+        fileId,
+        startLine: normStart,
+        endLine: normEnd,
+        userId: currentUser.userId,
+        username: currentUser.username,
+        userColor: currentUser.color,
+        socketId: socket.id,
+        lockedAt: new Date().toISOString()
+      };
+
+      locksMap.set(lockId, lockInfo);
+      broadcastFileLocks(io, currentWorkspaceId, fileId);
+    });
+
+    socket.on(SOCKET_EVENTS.LOCK.RELEASE, ({ fileId, lockId }) => {
+      if (!currentWorkspaceId || !currentUser) return;
+
+      const locksMap = roomFileLocks.get(currentWorkspaceId);
+      if (locksMap) {
+        const lock = locksMap.get(lockId);
+        if (lock && (lock.userId === currentUser.userId || lock.socketId === socket.id)) {
+          locksMap.delete(lockId);
+          broadcastFileLocks(io, currentWorkspaceId, fileId || lock.fileId);
+        }
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.LOCK.FORCE_RELEASE, ({ fileId, lockId }) => {
+      if (!currentWorkspaceId || !currentUser) return;
+
+      // Allow room OWNER to force release any lock
+      if (currentUser.role === 'OWNER') {
+        const locksMap = roomFileLocks.get(currentWorkspaceId);
+        if (locksMap && locksMap.has(lockId)) {
+          const lock = locksMap.get(lockId)!;
+          locksMap.delete(lockId);
+          broadcastFileLocks(io, currentWorkspaceId, fileId || lock.fileId);
+        }
+      }
+    });
+
 
     socket.on(SOCKET_EVENTS.PRESENCE.UPDATE, ({ cursor, activeFileId, activeFileName, isEditing, status }) => {
       if (currentWorkspaceId && currentUser) {
@@ -529,22 +637,34 @@ await runHostExecution();
     });
 
     socket.on('disconnect', () => {
-        // Ensure any leftover processes are killed on disconnect
-        if (currentWorkspaceId && roomPresence.has(currentWorkspaceId)) {
-          // No specific process cleanup here; processes are tied to executionId and will be cleaned up via kill or timeout
+      if (currentWorkspaceId) {
+        // Clean up locks held by disconnecting socket
+        const locksMap = roomFileLocks.get(currentWorkspaceId);
+        if (locksMap) {
+          const affectedFileIds = new Set<string>();
+          for (const [lockId, lock] of locksMap.entries()) {
+            if (lock.socketId === socket.id) {
+              affectedFileIds.add(lock.fileId);
+              locksMap.delete(lockId);
+            }
+          }
+          affectedFileIds.forEach(fid => broadcastFileLocks(io, currentWorkspaceId!, fid));
         }
 
-      if (currentWorkspaceId && roomPresence.has(currentWorkspaceId)) {
-        const roomMap = roomPresence.get(currentWorkspaceId)!;
-        roomMap.delete(socket.id);
+        if (roomPresence.has(currentWorkspaceId)) {
+          const roomMap = roomPresence.get(currentWorkspaceId)!;
+          roomMap.delete(socket.id);
 
-        if (roomMap.size === 0) {
-          roomPresence.delete(currentWorkspaceId);
-        } else {
-          broadcastRoomPresence(io, currentWorkspaceId);
+          if (roomMap.size === 0) {
+            roomPresence.delete(currentWorkspaceId);
+            roomFileLocks.delete(currentWorkspaceId);
+          } else {
+            broadcastRoomPresence(io, currentWorkspaceId);
+          }
         }
       }
     });
+
   });
 
   return io;

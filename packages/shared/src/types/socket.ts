@@ -42,3 +42,24 @@ export interface ChatMessageDto {
   message: string;
   timestamp: string;
 }
+
+export interface LineLockInfo {
+  lockId: string;
+  workspaceId: string;
+  fileId: string;
+  startLine: number;
+  endLine: number;
+  userId: string;
+  username: string;
+  userColor: string;
+  socketId: string;
+  lockedAt: string;
+}
+
+export interface LockRequestDto {
+  workspaceId: string;
+  fileId: string;
+  startLine: number;
+  endLine: number;
+}
+
