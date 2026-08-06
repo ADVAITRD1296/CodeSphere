@@ -16,7 +16,8 @@ import {
   Copy,
   Check,
   Settings,
-  Users
+  Users,
+  Video
 } from 'lucide-react';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
@@ -29,9 +30,11 @@ import { WorkspaceSettingsModal } from '../../../components/settings/WorkspaceSe
 import { PresenceSidebar } from '../../../components/presence/PresenceSidebar';
 import { UserAvatars } from '../../../components/editor/UserAvatars';
 import { VoiceCallControl } from '../../../components/voice/VoiceCallControl';
+import { VideoConferenceModal } from '../../../components/video/VideoConferenceModal';
 import { useTerminal } from '../../../hooks/useTerminal';
 import { usePresence } from '../../../hooks/usePresence';
 import { useVoiceCall } from '../../../hooks/useVoiceCall';
+import { useVideoCall } from '../../../hooks/useVideoCall';
 import { WorkspaceRole, SOCKET_EVENTS, ProgrammingLanguage } from '@codesphere/shared';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
@@ -79,11 +82,31 @@ export default function WorkspaceIDEPage() {
     isMuted,
     isSpeaking,
     voicePeers,
-    permissionError,
+    permissionError: voicePermissionError,
     joinVoiceCall,
     leaveVoiceCall,
     toggleMute
   } = useVoiceCall(socket, workspaceId);
+
+  // WebRTC Video Conference hook
+  const {
+    isInVideo,
+    isCameraOn,
+    isMicOn,
+    isScreenSharing,
+    localStream,
+    videoPeers,
+    videoDevices,
+    selectedDeviceId,
+    permissionError: videoPermissionError,
+    startCameraPreview,
+    joinVideoCall,
+    leaveVideoCall,
+    toggleCamera,
+    toggleMic,
+    switchCameraDevice,
+    toggleScreenShare
+  } = useVideoCall(socket, workspaceId);
 
   // Terminal state
   const { lines, session, runCode, clearTerminal, isRunning } = useTerminal(socket);
@@ -95,6 +118,7 @@ export default function WorkspaceIDEPage() {
   const [showChat, setShowChat] = useState(false);
   const [showPresenceSidebar, setShowPresenceSidebar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
 
   // Resize logic
   const resizeStateRef = useRef({ isResizing: false, startY: 0, startHeight: 0 });
@@ -227,12 +251,34 @@ export default function WorkspaceIDEPage() {
             isMuted={isMuted}
             isSpeaking={isSpeaking}
             voicePeers={voicePeers}
-            permissionError={permissionError}
+            permissionError={voicePermissionError}
             onJoin={joinVoiceCall}
             onLeave={leaveVoiceCall}
             onToggleMute={toggleMute}
             currentUsername={user?.username}
           />
+
+          {/* WebRTC Video Call Modal Trigger */}
+          <button
+            onClick={() => setShowVideoModal(true)}
+            title="Open Video Conference"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 10px',
+              backgroundColor: isInVideo ? 'rgba(137,180,250,0.2)' : '#313244',
+              color: isInVideo ? '#89b4fa' : '#cdd6f4',
+              border: isInVideo ? '1px solid #89b4fa' : '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            <Video size={14} color={isInVideo ? '#89b4fa' : '#cdd6f4'} />
+            <span>{isInVideo ? 'In Meeting' : 'Video Call'}</span>
+          </button>
 
           {/* Member Presence Avatars */}
           <UserAvatars
@@ -471,6 +517,31 @@ export default function WorkspaceIDEPage() {
           onClose={() => setShowSettings(false)}
           onDeleted={() => router.push('/dashboard')}
           onUpdated={() => fetchWorkspace(workspaceId)}
+        />
+      )}
+
+      {/* Video Conference Modal */}
+      {showVideoModal && (
+        <VideoConferenceModal
+          isOpen={showVideoModal}
+          isInVideo={isInVideo}
+          isCameraOn={isCameraOn}
+          isMicOn={isMicOn}
+          isScreenSharing={isScreenSharing}
+          localStream={localStream}
+          videoPeers={videoPeers}
+          videoDevices={videoDevices}
+          selectedDeviceId={selectedDeviceId}
+          permissionError={videoPermissionError}
+          currentUsername={user?.username || 'You'}
+          onJoin={joinVideoCall}
+          onLeave={leaveVideoCall}
+          onToggleCamera={toggleCamera}
+          onToggleMic={toggleMic}
+          onSwitchDevice={switchCameraDevice}
+          onToggleScreenShare={toggleScreenShare}
+          onStartPreview={startCameraPreview}
+          onClose={() => setShowVideoModal(false)}
         />
       )}
 

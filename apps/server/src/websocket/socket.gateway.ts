@@ -199,6 +199,73 @@ export function setupSocketGateway(server: http.Server) {
       }
     });
 
+    // ─── WebRTC Video Signaling Gateway ─────────────────────────────────────
+    socket.on(SOCKET_EVENTS.VIDEO.JOIN, () => {
+      if (currentWorkspaceId && currentUser) {
+        currentUser.isInVideo = true;
+        currentUser.status = 'SHARING_SCREEN';
+        currentUser.lastActive = new Date().toISOString();
+
+        // Get all existing peer socket IDs in video conference
+        const roomMap = roomPresence.get(currentWorkspaceId);
+        const peerSocketIds = roomMap
+          ? Array.from(roomMap.values())
+              .filter(u => u.socketId !== socket.id && u.isInVideo)
+              .map(u => u.socketId)
+          : [];
+
+        // Notify joining user with existing video peers
+        socket.emit(SOCKET_EVENTS.VIDEO.PEER_JOINED, { peers: peerSocketIds });
+
+        // Notify existing video peers that new user joined video
+        socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.VIDEO.PEER_JOINED, {
+          peerSocketId: socket.id,
+          userId: currentUser.userId,
+          username: currentUser.username
+        });
+
+        broadcastRoomPresence(io, currentWorkspaceId);
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.VIDEO.LEAVE, () => {
+      if (currentWorkspaceId && currentUser) {
+        currentUser.isInVideo = false;
+        if (currentUser.status === 'SHARING_SCREEN') {
+          currentUser.status = 'ONLINE';
+        }
+        currentUser.lastActive = new Date().toISOString();
+
+        socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.VIDEO.PEER_LEFT, {
+          peerSocketId: socket.id
+        });
+
+        broadcastRoomPresence(io, currentWorkspaceId);
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.VIDEO.SIGNAL, ({ targetSocketId, signal }) => {
+      // Direct WebRTC SDP / ICE candidate relay for Video & Screen Sharing tracks
+      io.to(targetSocketId).emit(SOCKET_EVENTS.VIDEO.SIGNAL, {
+        senderSocketId: socket.id,
+        signal
+      });
+    });
+
+    socket.on(SOCKET_EVENTS.VIDEO.STATE_UPDATE, ({ isCameraOn, isMicOn, isScreenSharing, activeDeviceId }) => {
+      if (currentWorkspaceId && currentUser) {
+        socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.VIDEO.STATE_UPDATE, {
+          socketId: socket.id,
+          userId: currentUser.userId,
+          username: currentUser.username,
+          isCameraOn,
+          isMicOn,
+          isScreenSharing,
+          activeDeviceId
+        });
+      }
+    });
+
     socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, ({ workspaceId, message }) => {
       if (!currentUser) return;
       const chatMsg: ChatMessageDto = {

@@ -20,6 +20,14 @@ export const SOCKET_EVENTS = {
     PEER_JOINED: 'voice:peer-joined',
     PEER_LEFT: 'voice:peer-left',
   },
+  VIDEO: {
+    JOIN: 'video:join',
+    LEAVE: 'video:leave',
+    SIGNAL: 'video:signal',
+    STATE_UPDATE: 'video:state-update',
+    PEER_JOINED: 'video:peer-joined',
+    PEER_LEFT: 'video:peer-left',
+  },
   EXECUTION: {
     SUBMIT: 'execution:submit',
     STDOUT: 'execution:stdout',
