@@ -28,8 +28,10 @@ import { ChatPanel } from '../../../components/chat/ChatPanel';
 import { WorkspaceSettingsModal } from '../../../components/settings/WorkspaceSettings';
 import { PresenceSidebar } from '../../../components/presence/PresenceSidebar';
 import { UserAvatars } from '../../../components/editor/UserAvatars';
+import { VoiceCallControl } from '../../../components/voice/VoiceCallControl';
 import { useTerminal } from '../../../hooks/useTerminal';
 import { usePresence } from '../../../hooks/usePresence';
+import { useVoiceCall } from '../../../hooks/useVoiceCall';
 import { WorkspaceRole, SOCKET_EVENTS, ProgrammingLanguage } from '@codesphere/shared';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
@@ -70,6 +72,18 @@ export default function WorkspaceIDEPage() {
     null,
     userRole
   );
+
+  // WebRTC Voice Call hook
+  const {
+    isInVoice,
+    isMuted,
+    isSpeaking,
+    voicePeers,
+    permissionError,
+    joinVoiceCall,
+    leaveVoiceCall,
+    toggleMute
+  } = useVoiceCall(socket, workspaceId);
 
   // Terminal state
   const { lines, session, runCode, clearTerminal, isRunning } = useTerminal(socket);
@@ -207,6 +221,19 @@ export default function WorkspaceIDEPage() {
 
         {/* Header Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* WebRTC Voice Call Control */}
+          <VoiceCallControl
+            isInVoice={isInVoice}
+            isMuted={isMuted}
+            isSpeaking={isSpeaking}
+            voicePeers={voicePeers}
+            permissionError={permissionError}
+            onJoin={joinVoiceCall}
+            onLeave={leaveVoiceCall}
+            onToggleMute={toggleMute}
+            currentUsername={user?.username}
+          />
+
           {/* Member Presence Avatars */}
           <UserAvatars
             onlineUsers={onlineUsers}

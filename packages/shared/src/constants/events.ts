@@ -12,6 +12,14 @@ export const SOCKET_EVENTS = {
     SET_STATUS: 'presence:set-status',
     HEARTBEAT: 'presence:heartbeat',
   },
+  VOICE: {
+    JOIN: 'voice:join',
+    LEAVE: 'voice:leave',
+    SIGNAL: 'voice:signal',
+    STATE_UPDATE: 'voice:state-update',
+    PEER_JOINED: 'voice:peer-joined',
+    PEER_LEFT: 'voice:peer-left',
+  },
   EXECUTION: {
     SUBMIT: 'execution:submit',
     STDOUT: 'execution:stdout',

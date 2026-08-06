@@ -135,6 +135,70 @@ export function setupSocketGateway(server: http.Server) {
       }
     });
 
+    // ─── WebRTC Voice Signaling Gateway ─────────────────────────────────────
+    socket.on(SOCKET_EVENTS.VOICE.JOIN, () => {
+      if (currentWorkspaceId && currentUser) {
+        currentUser.isInVoice = true;
+        currentUser.status = 'IN_VOICE';
+        currentUser.lastActive = new Date().toISOString();
+
+        // Get all existing peer socket IDs in the room (excluding joining socket)
+        const roomMap = roomPresence.get(currentWorkspaceId);
+        const peerSocketIds = roomMap
+          ? Array.from(roomMap.values())
+              .filter(u => u.socketId !== socket.id && u.isInVoice)
+              .map(u => u.socketId)
+          : [];
+
+        // Notify joining user with existing voice peers
+        socket.emit(SOCKET_EVENTS.VOICE.PEER_JOINED, { peers: peerSocketIds });
+
+        // Notify existing voice peers that new user joined voice
+        socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.VOICE.PEER_JOINED, {
+          peerSocketId: socket.id,
+          userId: currentUser.userId,
+          username: currentUser.username
+        });
+
+        broadcastRoomPresence(io, currentWorkspaceId);
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.VOICE.LEAVE, () => {
+      if (currentWorkspaceId && currentUser) {
+        currentUser.isInVoice = false;
+        currentUser.status = 'ONLINE';
+        currentUser.lastActive = new Date().toISOString();
+
+        socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.VOICE.PEER_LEFT, {
+          peerSocketId: socket.id
+        });
+
+        broadcastRoomPresence(io, currentWorkspaceId);
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.VOICE.SIGNAL, ({ targetSocketId, signal }) => {
+      // Direct peer-to-peer WebRTC SDP / ICE signaling relay (audio data NEVER touches server)
+      io.to(targetSocketId).emit(SOCKET_EVENTS.VOICE.SIGNAL, {
+        senderSocketId: socket.id,
+        signal
+      });
+    });
+
+    socket.on(SOCKET_EVENTS.VOICE.STATE_UPDATE, ({ isMuted, isSpeaking, volume }) => {
+      if (currentWorkspaceId && currentUser) {
+        socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.VOICE.STATE_UPDATE, {
+          socketId: socket.id,
+          userId: currentUser.userId,
+          username: currentUser.username,
+          isMuted,
+          isSpeaking,
+          volume
+        });
+      }
+    });
+
     socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, ({ workspaceId, message }) => {
       if (!currentUser) return;
       const chatMsg: ChatMessageDto = {
