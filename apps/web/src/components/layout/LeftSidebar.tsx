@@ -68,6 +68,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = memo(({
           onClick={() => handleNavClick('files')}
           className={`ide-icon-btn${activeSection === 'files' && !isCollapsed ? ' active' : ''}`}
           title="Explorer (Files & Folders)"
+          aria-label="Toggle Files & Folders Explorer"
+          aria-pressed={activeSection === 'files' && !isCollapsed}
           style={{ width: '36px', height: '36px' }}
         >
           <FolderGit2 size={18} />
@@ -82,6 +84,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = memo(({
           }}
           className={`ide-icon-btn${activeSection === 'history' && !isCollapsed ? ' active' : ''}`}
           title="Version History Snapshots"
+          aria-label="Open Version History Snapshots"
+          aria-pressed={activeSection === 'history' && !isCollapsed}
           style={{ width: '36px', height: '36px' }}
         >
           <History size={18} />
@@ -96,6 +100,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = memo(({
           }}
           className={`ide-icon-btn${activeSection === 'whiteboard' && !isCollapsed ? ' active' : ''}`}
           title="Collaborative Whiteboard"
+          aria-label="Open Collaborative Whiteboard"
+          aria-pressed={activeSection === 'whiteboard' && !isCollapsed}
           style={{ width: '36px', height: '36px' }}
         >
           <Palette size={18} color="var(--mauve)" />
@@ -110,6 +116,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = memo(({
           }}
           className={`ide-icon-btn${activeSection === 'settings' && !isCollapsed ? ' active' : ''}`}
           title="Workspace Settings"
+          aria-label="Open Workspace Settings"
+          aria-pressed={activeSection === 'settings' && !isCollapsed}
           style={{ width: '36px', height: '36px', marginTop: 'auto' }}
         >
           <Settings size={18} />
@@ -120,6 +128,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = memo(({
           onClick={() => setIsCollapsed((v) => !v)}
           className="ide-icon-btn"
           title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          aria-expanded={!isCollapsed}
           style={{ width: '36px', height: '36px' }}
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
