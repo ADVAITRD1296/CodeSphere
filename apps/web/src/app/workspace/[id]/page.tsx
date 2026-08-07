@@ -272,32 +272,6 @@ export default function WorkspaceIDEPage() {
     });
   }, [workspaceId]);
 
-  if (isLoading || !activeWorkspace) {
-    return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#94a3b8' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.1rem' }}>
-          <Code2 size={28} style={{ color: '#3b82f6' }} />
-          <span>Loading Collaborative IDE Room...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#f87171' }}>
-        <ShieldAlert size={48} style={{ marginBottom: '16px' }} />
-        <h2>Workspace Error</h2>
-        <p style={{ color: '#94a3b8', margin: '12px 0 24px 0' }}>{error}</p>
-        <Link href="/dashboard" className="btn-primary">
-          Back to Dashboard
-        </Link>
-      </div>
-    );
-  }
-
-  const isReadOnly = userRole === 'VIEWER';
-
   const handleInvite = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setInviteSuccess('');
@@ -330,6 +304,32 @@ export default function WorkspaceIDEPage() {
       message: content,
     });
   }, [socket, workspaceId]);
+
+  if (isLoading || !activeWorkspace) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#94a3b8' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.1rem' }}>
+          <Code2 size={28} style={{ color: '#3b82f6' }} />
+          <span>Loading Collaborative IDE Room...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#f87171' }}>
+        <ShieldAlert size={48} style={{ marginBottom: '16px' }} />
+        <h2>Workspace Error</h2>
+        <p style={{ color: '#94a3b8', margin: '12px 0 24px 0' }}>{error}</p>
+        <Link href="/dashboard" className="btn-primary">
+          Back to Dashboard
+        </Link>
+      </div>
+    );
+  }
+
+  const isReadOnly = userRole === 'VIEWER';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--crust)', color: 'var(--text)', overflow: 'hidden' }}>
