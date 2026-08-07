@@ -475,25 +475,27 @@ export default function WorkspaceIDEPage() {
 
         {/* 2 & 3. Center Column: Monaco Code Editor + Bottom Terminal */}
         <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <MonacoEditorComponent
-            activeFile={activeFile}
-            openFileIds={openFileIds}
-            allFiles={activeWorkspace.files}
-            onSelectTab={(id) => setActiveFileId(id)}
-            onCloseTab={(id) => closeFileTab(id)}
-            onChangeContent={(val) => activeFile && updateLocalFileContent(activeFile.id, val)}
-            isReadOnly={isReadOnly}
-            username={user?.username}
-            currentUserId={user?.id}
-            userRole={userRole}
-            locks={locks}
-            myLocks={myLocks}
-            lockError={lockError}
-            onRequestLock={requestLock}
-            onReleaseLock={releaseLock}
-            onForceReleaseLock={forceReleaseLock}
-            isRangeLockedByOther={isRangeLockedByOther}
-          />
+          <div style={{ flex: 1, minHeight: 0, width: '100%', position: 'relative' }}>
+            <MonacoEditorComponent
+              activeFile={activeFile}
+              openFileIds={openFileIds}
+              allFiles={activeWorkspace.files}
+              onSelectTab={(id) => setActiveFileId(id)}
+              onCloseTab={(id) => closeFileTab(id)}
+              onChangeContent={(val) => activeFile && updateLocalFileContent(activeFile.id, val)}
+              isReadOnly={isReadOnly}
+              username={user?.username}
+              currentUserId={user?.id}
+              userRole={userRole}
+              locks={locks}
+              myLocks={myLocks}
+              lockError={lockError}
+              onRequestLock={requestLock}
+              onReleaseLock={releaseLock}
+              onForceReleaseLock={forceReleaseLock}
+              isRangeLockedByOther={isRangeLockedByOther}
+            />
+          </div>
 
           <TerminalPanel
             lines={lines}

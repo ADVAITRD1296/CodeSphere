@@ -209,13 +209,14 @@ export const TerminalPanel = memo(({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#11111b',
-        borderTop: '1px solid rgba(137, 180, 250, 0.15)',
+        backgroundColor: 'var(--crust)',
+        borderTop: '1px solid var(--border)',
         height: isCollapsed ? '38px' : `${height}px`,
         transition: 'height 0.15s ease',
         userSelect: 'none',
         position: 'relative',
         flexShrink: 0,
+        width: '100%',
       }}
     >
       {/* Resize Handle */}
@@ -244,8 +245,8 @@ export const TerminalPanel = memo(({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 12px',
-          backgroundColor: '#181825',
-          borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.06)',
+          backgroundColor: 'var(--mantle)',
+          borderBottom: isCollapsed ? 'none' : '1px solid var(--border)',
           flexShrink: 0,
           gap: '8px',
         }}
@@ -289,9 +290,9 @@ export const TerminalPanel = memo(({
               onChange={(e) => setSelectedLanguage(e.target.value as ProgrammingLanguage)}
               disabled={isRunning}
               style={{
-                backgroundColor: '#1e1e2e',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: '#cdd6f4',
+                backgroundColor: 'var(--base)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
                 borderRadius: '4px',
                 padding: '2px 6px',
                 fontSize: '11px',
@@ -531,8 +532,8 @@ export const TerminalPanel = memo(({
             alignItems: 'center',
             gap: '8px',
             padding: '6px 12px',
-            borderTop: '1px solid rgba(137, 180, 250, 0.1)',
-            backgroundColor: '#13131e',
+            borderTop: '1px solid var(--border)',
+            backgroundColor: 'var(--mantle)',
             flexShrink: 0,
             userSelect: 'none',
           }}

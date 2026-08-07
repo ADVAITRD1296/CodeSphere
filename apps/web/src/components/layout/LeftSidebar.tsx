@@ -52,7 +52,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = memo(({
         style={{
           width: '48px',
           height: '100%',
-          backgroundColor: '#13131e',
+          backgroundColor: 'var(--crust)',
           borderRight: '1px solid var(--border)',
           display: 'flex',
           flexDirection: 'column',

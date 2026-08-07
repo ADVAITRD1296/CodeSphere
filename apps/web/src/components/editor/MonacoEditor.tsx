@@ -6,6 +6,7 @@ import type { editor } from 'monaco-editor';
 import { X, FileCode, Wifi, WifiOff, Lock, Unlock, ShieldAlert } from 'lucide-react';
 import { ProjectFileDto, ProgrammingLanguage, LineLockInfo } from '@codesphere/shared';
 import { useYjsProvider } from '../../hooks/useYjsProvider';
+import { useTheme } from '../../hooks/useTheme';
 
 interface MonacoEditorProps {
   activeFile: ProjectFileDto | null;
@@ -59,6 +60,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
   const [dirtyFileIds, setDirtyFileIds] = useState<Set<string>>(new Set());
   const decorationsCollectionRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const bannerTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const { theme } = useTheme();
 
   const { isSynced } = useYjsProvider(
     activeFile ? activeFile.id : null,
@@ -157,7 +159,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
 
   // ─── Configure Language Services Before Monaco Mounts ──────────────────
   const handleBeforeMount: BeforeMount = useCallback((monaco) => {
-    // ─── Register Catppuccin Mocha Theme ────────────────────────────────
+    // ─── Register Catppuccin Mocha Theme (Dark) ──────────────────────────
     monaco.editor.defineTheme('catppuccin-mocha', {
       base: 'vs-dark',
       inherit: true,
@@ -215,8 +217,56 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
         'scrollbarSlider.background': '#45475a88',
         'scrollbarSlider.hoverBackground': '#45475a',
         'scrollbarSlider.activeBackground': '#585b70',
-        'minimap.background': '#181825',
+        'minimap.background': '#1e1e2e',
         'editorOverviewRuler.border': '#1e1e2e',
+        'editorOverviewRuler.background': '#1e1e2e',
+      },
+    });
+
+    // ─── Register Catppuccin Latte Theme (Light) ─────────────────────────
+    monaco.editor.defineTheme('catppuccin-latte', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: '', foreground: '4c4f69', background: 'eff1f5' },
+        { token: 'comment', foreground: '9ca0b0', fontStyle: 'italic' },
+        { token: 'keyword', foreground: '8839ef' },
+        { token: 'keyword.operator', foreground: '04a5e5' },
+        { token: 'string', foreground: '40a02b' },
+        { token: 'string.escape', foreground: 'd20f39' },
+        { token: 'number', foreground: 'fe640b' },
+        { token: 'operator', foreground: '04a5e5' },
+        { token: 'type', foreground: 'df8e1d' },
+        { token: 'class', foreground: 'df8e1d' },
+        { token: 'interface', foreground: '179299' },
+        { token: 'function', foreground: '1e66f5' },
+        { token: 'variable', foreground: '4c4f69' },
+        { token: 'constant', foreground: 'fe640b' },
+        { token: 'delimiter', foreground: '9ca0b0' },
+      ],
+      colors: {
+        'editor.background': '#eff1f5',
+        'editor.foreground': '#4c4f69',
+        'editor.selectionBackground': '#acb0be66',
+        'editor.inactiveSelectionBackground': '#ccd0da66',
+        'editor.lineHighlightBackground': '#e6e9ef',
+        'editorCursor.foreground': '#8839ef',
+        'editorWhitespace.foreground': '#bcc0cc',
+        'editorIndentGuide.background': '#ccd0da',
+        'editorIndentGuide.activeBackground': '#bcc0cc',
+        'editorLineNumber.foreground': '#9ca0b0',
+        'editorLineNumber.activeForeground': '#8839ef',
+        'editorGutter.background': '#eff1f5',
+        'editorOverviewRuler.border': '#eff1f5',
+        'editorOverviewRuler.background': '#eff1f5',
+        'editorSuggestWidget.background': '#e6e9ef',
+        'editorSuggestWidget.border': '#ccd0da',
+        'editorSuggestWidget.foreground': '#4c4f69',
+        'editorSuggestWidget.selectedBackground': '#ccd0da',
+        'scrollbarSlider.background': '#acb0be66',
+        'scrollbarSlider.hoverBackground': '#acb0be99',
+        'scrollbarSlider.activeBackground': '#7c7f93',
+        'minimap.background': '#eff1f5',
       },
     });
 
@@ -556,7 +606,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
               height="100%"
               language={getMonacoLanguage(activeFile.language)}
               defaultValue={activeFile.content}
-              theme="catppuccin-mocha"
+              theme={theme === 'light' ? 'catppuccin-latte' : 'catppuccin-mocha'}
               beforeMount={handleBeforeMount}
               onMount={handleEditorMount}
               onChange={(val) => {
@@ -573,6 +623,9 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
                 fontLigatures: true,
                 glyphMargin: true,
                 minimap: { enabled: true, scale: 1 },
+                overviewRulerBorder: false,
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
                 tabSize: 2,
