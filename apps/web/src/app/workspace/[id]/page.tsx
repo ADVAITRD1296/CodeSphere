@@ -36,6 +36,7 @@ import { WhiteboardModal } from '../../../components/whiteboard/WhiteboardModal'
 import { RightCollabPanel, CollabTab } from '../../../components/layout/RightCollabPanel';
 import { LeftSidebar } from '../../../components/layout/LeftSidebar';
 import { IncomingCallToast, IncomingCallData } from '../../../components/calls/IncomingCallToast';
+import { ThemeToggle } from '../../../components/common/ThemeToggle';
 import { useTerminal } from '../../../hooks/useTerminal';
 import { usePresence } from '../../../hooks/usePresence';
 import { useVoiceCall } from '../../../hooks/useVoiceCall';
@@ -383,6 +384,9 @@ export default function WorkspaceIDEPage() {
           >
             <Palette size={13} color="var(--mauve)" /> Whiteboard
           </button>
+
+          {/* Theme Toggle (Dark / Light Mode) */}
+          <ThemeToggle />
 
           <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
 

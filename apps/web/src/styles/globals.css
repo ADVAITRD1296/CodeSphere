@@ -86,6 +86,47 @@
   --z-tooltip:  300;
 }
 
+/* ── Catppuccin Latte — Light Theme Tokens ───────────────────────── */
+[data-theme="light"] {
+  /* Base surfaces — Catppuccin Latte */
+  --crust:    #dce0e8;
+  --mantle:   #e6e9ef;
+  --base:     #eff1f5;
+  --surface0: #ccd0da;
+  --surface1: #bcc0cc;
+  --surface2: #acb0be;
+
+  /* Text */
+  --text:     #4c4f69;
+  --subtext1: #5c5f77;
+  --subtext0: #6c6f85;
+  --overlay2: #7c7f93;
+  --overlay1: #8c8fa1;
+  --overlay0: #9ca0b0;
+
+  /* Accent Colors */
+  --blue:     #1e66f5;
+  --lavender: #7287fd;
+  --mauve:    #8839ef;
+  --pink:     #ea76cb;
+  --red:      #d20f39;
+  --peach:    #fe640b;
+  --yellow:   #df8e1d;
+  --green:    #40a02b;
+  --teal:     #179299;
+  --sky:      #04a5e5;
+  --sapphire: #209fb5;
+
+  /* Borders & Shadows */
+  --border:       rgba(0, 0, 0, 0.1);
+  --border-focus: rgba(30, 102, 245, 0.5);
+  --border-glow:  rgba(30, 102, 245, 0.25);
+  --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md:    0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-lg:    0 24px 64px rgba(0, 0, 0, 0.16);
+  --shadow-glow:  0 0 20px rgba(30, 102, 245, 0.15);
+}
+
 /* ── 2. Reset & Base ───────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
