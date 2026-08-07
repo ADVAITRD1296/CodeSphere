@@ -532,9 +532,8 @@ export function setupSocketGateway(server: http.Server) {
 
       // Helper: run code on host when Docker is unavailable
       const runHostExecution = async (): Promise<void> => {
-        const spawnAndStream = (cmd: string, args: string[], label: string) => {
+        const spawnAndStream = (cmd: string, args: string[], label: string, isFinalStep = true) => {
           return new Promise<number>((resolve) => {
-            // Directly spawn process without emitting running header
             const proc = spawn(cmd, args, { shell: cmd === 'sh', stdio: ['pipe', 'pipe', 'pipe'] });
             runningProcesses.set(executionId, proc);
             const timer = setTimeout(() => { isTimedOut = true; proc.kill('SIGKILL'); }, 5000);
@@ -551,35 +550,42 @@ export function setupSocketGateway(server: http.Server) {
                 executionId,
                 chunk: `\x1b[31m[Error] Failed to start ${label}: ${err.message}\x1b[0m\n`
               });
-              socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId, exitCode: 1, durationMs: Date.now() - startTime });
+              if (isFinalStep) {
+                socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId, exitCode: 1, durationMs: Date.now() - startTime });
+              }
               resolve(1);
             });
             proc.on('close', (exitCode) => {
               clearTimeout(timer);
               runningProcesses.delete(executionId);
               const durationMs = Date.now() - startTime;
-              socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId, exitCode: exitCode || 0, durationMs });
+              if (isFinalStep || exitCode !== 0) {
+                socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId, exitCode: exitCode || 0, durationMs });
+              }
               resolve(exitCode || 0);
             });
           });
         };
+
         switch (language) {
           case 'JAVASCRIPT':
-            await spawnAndStream('node', [filePath], 'host runtime');
+            await spawnAndStream('node', [filePath], 'host runtime', true);
             break;
           case 'TYPESCRIPT':
-            await spawnAndStream('npx', ['tsx', filePath], 'host runtime');
+            await spawnAndStream('npx', ['tsx', filePath], 'host runtime', true);
             break;
           case 'PYTHON':
-            await spawnAndStream('python3', [filePath], 'host runtime');
+            await spawnAndStream('python3', [filePath], 'host runtime', true);
             break;
-          case 'CPP':
-            // Compile then execute
-            await spawnAndStream('g++', [filePath, '-o', `${tempDir}/app`], 'host compile');
-            await spawnAndStream(`${tempDir}/app`, [], 'host runtime');
+          case 'CPP': {
+            const compileCode = await spawnAndStream('g++', [filePath, '-o', `${tempDir}/app`], 'host compile', false);
+            if (compileCode === 0) {
+              await spawnAndStream(`${tempDir}/app`, [], 'host runtime', true);
+            }
             break;
+          }
           case 'GO':
-            await spawnAndStream('go', ['run', filePath], 'host runtime');
+            await spawnAndStream('go', ['run', filePath], 'host runtime', true);
             break;
         }
       };

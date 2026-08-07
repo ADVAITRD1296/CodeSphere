@@ -876,22 +876,38 @@ code, pre, kbd {
 .monaco-editor,
 .monaco-editor .margin,
 .monaco-editor-background,
-.monaco-editor .monaco-scrollable-element {
+.monaco-editor .monaco-scrollable-element,
+.monaco-editor .overflow-guard {
   background-color: var(--base) !important;
 }
 
+/* Completely eliminate the overview ruler white strip */
 .monaco-editor .overview-ruler,
-.monaco-editor .minimap,
 .monaco-editor .decorationsOverviewRuler {
+  display: none !important;
+  width: 0 !important;
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
 }
 
+/* Eliminate minimap background mismatch */
+.monaco-editor .minimap,
+.monaco-editor .minimap-shadow-visible {
+  background-color: var(--base) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Light theme overrides */
 [data-theme="light"] .monaco-editor,
 [data-theme="light"] .monaco-editor .margin,
 [data-theme="light"] .monaco-editor-background,
-[data-theme="light"] .monaco-editor .monaco-scrollable-element {
+[data-theme="light"] .monaco-editor .monaco-scrollable-element,
+[data-theme="light"] .monaco-editor .overflow-guard {
   background-color: #eff1f5 !important;
 }
 
+[data-theme="light"] .monaco-editor .minimap {
+  background-color: #eff1f5 !important;
+}
