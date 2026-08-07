@@ -142,6 +142,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const workspace = get().activeWorkspace;
     if (!workspace) return;
 
+    const currentFile = workspace.files.find(f => f.id === fileId);
+    if (currentFile && currentFile.content === content) return;
+
     set({
       activeWorkspace: {
         ...workspace,

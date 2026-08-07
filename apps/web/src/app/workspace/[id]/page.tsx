@@ -224,7 +224,7 @@ export default function WorkspaceIDEPage() {
 
   const isReadOnly = userRole === 'VIEWER';
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const handleInvite = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setInviteSuccess('');
     setInviteError('');
@@ -236,18 +236,18 @@ export default function WorkspaceIDEPage() {
     } catch (err: any) {
       setInviteError(err.message || 'Failed to add member');
     }
-  };
+  }, [addMember, workspaceId, inviteIdentifier, inviteRole]);
 
-  const copyRoomLink = () => {
+  const copyRoomLink = useCallback(() => {
     navigator.clipboard.writeText(window.location.href);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
-  };
+  }, []);
 
-  const handleRunCode = (language: ProgrammingLanguage, code: string) => {
+  const handleRunCode = useCallback((language: ProgrammingLanguage, code: string) => {
     if (terminalCollapsed) setTerminalCollapsed(false);
     runCode(language, code);
-  };
+  }, [terminalCollapsed, runCode]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--crust)', color: 'var(--text)', overflow: 'hidden' }}>

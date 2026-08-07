@@ -26,9 +26,11 @@ export function usePresence(
   });
 
   const [onlineUsers, setOnlineUsers] = useState<UserPresence[]>([]);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isEditingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCursorEmitRef = useRef<number>(0);
 
   // Helper to emit status changes
   const updateStatus = useCallback((status: PresenceStatus) => {
@@ -40,15 +42,16 @@ export function usePresence(
   useEffect(() => {
     if (!workspaceId || !userId || !username) return;
 
-    const socket = io(SOCKET_URL, {
+    const socketInstance = io(SOCKET_URL, {
       withCredentials: true,
       transports: ['websocket']
     });
 
-    socketRef.current = socket;
+    socketRef.current = socketInstance;
+    setSocket(socketInstance);
 
-    socket.on('connect', () => {
-      socket.emit(SOCKET_EVENTS.COLLABORATION.JOIN_ROOM, {
+    socketInstance.on('connect', () => {
+      socketInstance.emit(SOCKET_EVENTS.COLLABORATION.JOIN_ROOM, {
         workspaceId,
         userId,
         username,
@@ -58,7 +61,7 @@ export function usePresence(
       });
     });
 
-    socket.on(SOCKET_EVENTS.PRESENCE.ROOM_STATE, (data: RoomPresenceSummary | UserPresence[]) => {
+    socketInstance.on(SOCKET_EVENTS.PRESENCE.ROOM_STATE, (data: RoomPresenceSummary | UserPresence[]) => {
       if (Array.isArray(data)) {
         // Fallback backward-compatible list
         setOnlineUsers(data);
@@ -109,8 +112,9 @@ export function usePresence(
       window.removeEventListener('mousemove', handleUserActivity);
       window.removeEventListener('keydown', handleUserActivity);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      socket.disconnect();
+      socketInstance.disconnect();
       socketRef.current = null;
+      setSocket(null);
     };
   }, [workspaceId, userId, username, updateStatus, userRole]);
 
@@ -119,6 +123,10 @@ export function usePresence(
     if (!editorInstance || !socketRef.current) return;
 
     const cursorDisposable = editorInstance.onDidChangeCursorPosition((e) => {
+      const now = Date.now();
+      if (now - lastCursorEmitRef.current < 100) return; // 100ms throttle for cursor updates
+      lastCursorEmitRef.current = now;
+
       const cursor = { line: e.position.lineNumber, column: e.position.column };
       socketRef.current?.emit(SOCKET_EVENTS.PRESENCE.UPDATE, {
         cursor,
@@ -153,5 +161,6 @@ export function usePresence(
     };
   }, [editorInstance, activeFileId, activeFileName]);
 
-  return { onlineUsers, presenceSummary, socket: socketRef.current, updateStatus };
+  return { onlineUsers, presenceSummary, socket, updateStatus };
 }
+

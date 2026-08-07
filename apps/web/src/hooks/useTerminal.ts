@@ -20,6 +20,7 @@ export interface TerminalSession {
 export function useTerminal(socket: Socket | null) {
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [session, setSession] = useState<TerminalSession | null>(null);
+  const [isRunningState, setIsRunningState] = useState(false);
   const isRunningRef = useRef(false);
   const currentExecutionIdRef = useRef<string | null>(null);
 
@@ -47,6 +48,7 @@ export function useTerminal(socket: Socket | null) {
 
       clearTerminal();
       isRunningRef.current = true;
+      setIsRunningState(true);
 
       const timestamp = new Date().toLocaleTimeString();
       setLines([
@@ -153,6 +155,7 @@ export function useTerminal(socket: Socket | null) {
       durationMs: number;
     }) => {
       isRunningRef.current = false;
+      setIsRunningState(false);
       currentExecutionIdRef.current = null;
       setSession((prev) =>
         prev ? { ...prev, isRunning: false, exitCode, durationMs } : null
@@ -189,6 +192,6 @@ export function useTerminal(socket: Socket | null) {
     clearTerminal,
     sendInput,
     killExecution,
-    isRunning: isRunningRef.current,
+    isRunning: isRunningState,
   };
 }

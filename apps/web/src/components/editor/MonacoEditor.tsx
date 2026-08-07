@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { memo, useState, useCallback, useEffect, useRef } from 'react';
 import Editor, { OnMount, BeforeMount } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { X, FileCode, Wifi, WifiOff, Lock, Unlock, ShieldAlert } from 'lucide-react';
@@ -31,7 +31,9 @@ interface MonacoEditorProps {
 }
 
 
-export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
+let providersRegistered = false;
+
+export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
   activeFile,
   openFileIds,
   allFiles,
@@ -153,6 +155,8 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
 
   // ─── Configure Language Services Before Monaco Mounts ──────────────────
   const handleBeforeMount: BeforeMount = useCallback((monaco) => {
+    if (providersRegistered) return;
+    providersRegistered = true;
     // JavaScript & TypeScript IntelliSense configuration
     monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
       target: monaco.languages.typescript.ScriptTarget.ESNext,
@@ -538,5 +542,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
       </div>
     </div>
   );
-};
+});
+
+MonacoEditorComponent.displayName = 'MonacoEditorComponent';
 
