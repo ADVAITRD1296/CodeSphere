@@ -20,6 +20,8 @@ export interface VoicePeerState {
   audioStream?: MediaStream;
 }
 
+export type VoicePeer = VoicePeerState;
+
 export function useVoiceCall(socket: Socket | null, workspaceId: string | null) {
   const [isInVoice, setIsInVoice] = useState(false);
   const [isMuted, setIsMuted] = useState(false);

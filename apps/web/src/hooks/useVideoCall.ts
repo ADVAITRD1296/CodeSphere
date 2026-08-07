@@ -20,6 +20,8 @@ export interface VideoPeerState {
   stream?: MediaStream;
 }
 
+export type VideoPeer = VideoPeerState;
+
 export function useVideoCall(socket: Socket | null, workspaceId: string | null) {
   const [isInVideo, setIsInVideo] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);

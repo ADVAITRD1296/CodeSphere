@@ -33,6 +33,7 @@ import { UserAvatars } from '../../../components/editor/UserAvatars';
 import { VoiceCallControl } from '../../../components/voice/VoiceCallControl';
 import { VideoConferenceModal } from '../../../components/video/VideoConferenceModal';
 import { WhiteboardModal } from '../../../components/whiteboard/WhiteboardModal';
+import { RightCollabPanel, CollabTab } from '../../../components/layout/RightCollabPanel';
 import { useTerminal } from '../../../hooks/useTerminal';
 import { usePresence } from '../../../hooks/usePresence';
 import { useVoiceCall } from '../../../hooks/useVoiceCall';
@@ -143,6 +144,39 @@ export default function WorkspaceIDEPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showWhiteboardModal, setShowWhiteboardModal] = useState(false);
+
+  // Persistent Right Collaboration Panel (4-Panel Layout)
+  const [showRightCollabPanel, setShowRightCollabPanel] = useState(true);
+  const [activeCollabTab, setActiveCollabTab] = useState<CollabTab>('members');
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string; sender: string; content: string; timestamp: number; isSelf: boolean }>>([]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleNewMessage = (msg: any) => {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: msg.id || Math.random().toString(),
+          sender: msg.username || 'User',
+          content: msg.message || msg.content || '',
+          timestamp: msg.timestamp ? new Date(msg.timestamp).getTime() : Date.now(),
+          isSelf: msg.userId === user?.id,
+        },
+      ]);
+    };
+    socket.on(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+    return () => {
+      socket.off(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+    };
+  }, [socket, user?.id]);
+
+  const handleSendChatMessage = useCallback((content: string) => {
+    if (!socket || !workspaceId) return;
+    socket.emit(SOCKET_EVENTS.CHAT.SEND_MESSAGE, {
+      workspaceId,
+      message: content,
+    });
+  }, [socket, workspaceId]);
 
 
   // Resize logic
@@ -313,13 +347,13 @@ export default function WorkspaceIDEPage() {
             onTogglePresenceSidebar={() => setShowPresenceSidebar(v => !v)}
           />
 
-          {/* Active Members Count */}
+          {/* Collab Panel Toggle Button */}
           <button
-            onClick={() => setShowPresenceSidebar(v => !v)}
-            className={`ide-pill-btn${showPresenceSidebar ? ' active' : ''}`}
-            title="Toggle Live Members Presence"
+            onClick={() => setShowRightCollabPanel(v => !v)}
+            className={`ide-pill-btn${showRightCollabPanel ? ' active' : ''}`}
+            title="Toggle Right Collaboration Panel"
           >
-            <Users size={13} /> {presenceSummary.totalOnline} Active
+            <Users size={13} /> Collab ({presenceSummary.totalOnline})
           </button>
 
           <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
@@ -360,15 +394,6 @@ export default function WorkspaceIDEPage() {
             </button>
           )}
 
-          {/* Chat Toggle */}
-          <button
-            onClick={() => setShowChat(v => !v)}
-            className={`ide-icon-btn${showChat ? ' active' : ''}`}
-            title="Room Chat"
-          >
-            <MessageSquare size={14} />
-          </button>
-
           <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
 
           {userRole === 'OWNER' && (
@@ -385,64 +410,82 @@ export default function WorkspaceIDEPage() {
       </header>
 
 
-      {/* Main IDE Body */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', flexDirection: 'column' }}>
-        {/* Editor + Sidebar row */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* Sidebar File Tree */}
-          <div style={{ width: '260px', height: '100%', flexShrink: 0 }}>
-            <FileTree workspaceId={workspaceId} userRole={userRole} />
-          </div>
-
-          {/* Main Editor Pane */}
-          <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <MonacoEditorComponent
-              activeFile={activeFile}
-              openFileIds={openFileIds}
-              allFiles={activeWorkspace.files}
-              onSelectTab={(id) => setActiveFileId(id)}
-              onCloseTab={(id) => closeFileTab(id)}
-              onChangeContent={(val) => activeFile && updateLocalFileContent(activeFile.id, val)}
-              isReadOnly={isReadOnly}
-              username={user?.username}
-              currentUserId={user?.id}
-              userRole={userRole}
-              locks={locks}
-              myLocks={myLocks}
-              lockError={lockError}
-              onRequestLock={requestLock}
-              onReleaseLock={releaseLock}
-              onForceReleaseLock={forceReleaseLock}
-              isRangeLockedByOther={isRangeLockedByOther}
-            />
-          </div>
-
-
-          {/* Right Live Presence Sidebar */}
-          {showPresenceSidebar && (
-            <PresenceSidebar
-              summary={presenceSummary}
-              currentUserId={user?.id}
-            />
-          )}
+      {/* Main IDE 4-Panel Layout Body */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* 1. Left Sidebar File Tree */}
+        <div style={{ width: '260px', height: '100%', flexShrink: 0 }}>
+          <FileTree workspaceId={workspaceId} userRole={userRole} />
         </div>
 
-        {/* Terminal Panel */}
-        <TerminalPanel
-          lines={lines}
-          session={session}
-          isRunning={isRunning}
-          onRun={handleRunCode}
-          onClear={clearTerminal}
-          onSendInput={sendInput}
-          onKillExecution={killExecution}
-          activeFileContent={activeFile?.content}
-          activeFileLanguage={activeFile?.language}
-          isCollapsed={terminalCollapsed}
-          onToggleCollapse={() => setTerminalCollapsed((v) => !v)}
-          height={terminalHeight}
-          onResizeStart={handleResizeStart}
-        />
+        {/* 2 & 3. Center Column: Monaco Code Editor + Bottom Terminal */}
+        <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <MonacoEditorComponent
+            activeFile={activeFile}
+            openFileIds={openFileIds}
+            allFiles={activeWorkspace.files}
+            onSelectTab={(id) => setActiveFileId(id)}
+            onCloseTab={(id) => closeFileTab(id)}
+            onChangeContent={(val) => activeFile && updateLocalFileContent(activeFile.id, val)}
+            isReadOnly={isReadOnly}
+            username={user?.username}
+            currentUserId={user?.id}
+            userRole={userRole}
+            locks={locks}
+            myLocks={myLocks}
+            lockError={lockError}
+            onRequestLock={requestLock}
+            onReleaseLock={releaseLock}
+            onForceReleaseLock={forceReleaseLock}
+            isRangeLockedByOther={isRangeLockedByOther}
+          />
+
+          <TerminalPanel
+            lines={lines}
+            session={session}
+            isRunning={isRunning}
+            onRun={handleRunCode}
+            onClear={clearTerminal}
+            onSendInput={sendInput}
+            onKillExecution={killExecution}
+            activeFileContent={activeFile?.content}
+            activeFileLanguage={activeFile?.language}
+            isCollapsed={terminalCollapsed}
+            onToggleCollapse={() => setTerminalCollapsed((v) => !v)}
+            height={terminalHeight}
+            onResizeStart={handleResizeStart}
+          />
+        </div>
+
+        {/* 4. Right Persistent Collaboration Panel (Voice, Video, Chat, Members) */}
+        {showRightCollabPanel && (
+          <RightCollabPanel
+            activeTab={activeCollabTab}
+            onSelectTab={(tab) => setActiveCollabTab(tab)}
+            onClose={() => setShowRightCollabPanel(false)}
+            presenceSummary={presenceSummary}
+            currentUserId={user?.id}
+            isInVoice={isInVoice}
+            isMuted={isMuted}
+            isSpeaking={isSpeaking}
+            voicePeers={voicePeers}
+            onJoinVoice={joinVoiceCall}
+            onLeaveVoice={leaveVoiceCall}
+            onToggleMute={toggleMute}
+            isInVideo={isInVideo}
+            isCameraOn={isCameraOn}
+            isMicOn={isMicOn}
+            isScreenSharing={isScreenSharing}
+            localStream={localStream}
+            videoPeers={videoPeers}
+            onJoinVideo={joinVideoCall}
+            onLeaveVideo={leaveVideoCall}
+            onToggleCamera={toggleCamera}
+            onToggleVideoMic={toggleMic}
+            onToggleScreenShare={toggleScreenShare}
+            chatMessages={chatMessages}
+            onSendMessage={handleSendChatMessage}
+          />
+        )}
       </div>
 
       {/* Snapshot Version History Panel */}
