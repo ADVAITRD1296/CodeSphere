@@ -673,7 +673,13 @@ export function setupSocketGateway(server: http.Server) {
       dockerProc.on('close', async (exitCode) => {
         clearTimeout(dockerTimer);
         const durationMs = Date.now() - startTime;
-        const finalExit = isTimedOut ? 124 : (exitCode || 0);
+        const finalExit = isTimedOut ? 124 : (exitCode ?? 0);
+
+        if (dockerFailed) {
+          // Already handled by the 'error' event which triggered runHostExecution
+          await cleanup();
+          return;
+        }
 
         if (isTimedOut) {
           socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
@@ -682,14 +688,9 @@ export function setupSocketGateway(server: http.Server) {
           });
         }
 
-        // If Docker exited with a non-zero code and we haven't already fallen back, try host runtime
-        if (!dockerFailed && exitCode !== 0) {
-  
-await runHostExecution();
-        } else {
-          socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId, exitCode: finalExit, durationMs });
-          await cleanup();
-        }
+        // Docker ran successfully (even if program had errors). Report result directly.
+        socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId, exitCode: finalExit, durationMs });
+        await cleanup();
       });
     });
 

@@ -576,7 +576,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
       </div>
 
       {/* Main Monaco Container */}
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {/* Intercept / Conflict Warning Banner */}
         {(interceptBanner || lockError) && (
           <div className="lock-toast-banner">
@@ -586,7 +586,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
         )}
 
         {activeFile ? (
-          <>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
             {/* Breadcrumb Bar */}
             <div style={{
               height: '26px',
@@ -609,7 +609,8 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
               )}
             </div>
 
-            {/* Monaco Editor */}
+            {/* Monaco Editor — uses flex:1 so breadcrumb + status bar are excluded from its height */}
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
             <Editor
               height="100%"
               language={getMonacoLanguage(activeFile.language)}
@@ -630,7 +631,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
                 fontFamily: "'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace",
                 fontLigatures: true,
                 glyphMargin: true,
-                minimap: { enabled: true, scale: 1 },
+                minimap: { enabled: false },
                 overviewRulerBorder: false,
                 overviewRulerLanes: 0,
                 hideCursorInOverviewRuler: true,
@@ -674,6 +675,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
                 padding: { top: 8, bottom: 8 },
               }}
             />
+            </div>
 
             {/* Status Bar */}
             <div style={{
@@ -701,7 +703,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
                 {isReadOnly && <span style={{ color: '#f38ba8' }}>🔒 View Only</span>}
               </div>
             </div>
-          </>
+          </div>
         ) : (
           <div style={{
             display: 'flex',
