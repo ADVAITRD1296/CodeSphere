@@ -872,3 +872,26 @@ code, pre, kbd {
   animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ── 26. Monaco Editor Zero-White-Strip & Theme Overrides ─────────── */
+.monaco-editor,
+.monaco-editor .margin,
+.monaco-editor-background,
+.monaco-editor .monaco-scrollable-element {
+  background-color: var(--base) !important;
+}
+
+.monaco-editor .overview-ruler,
+.monaco-editor .minimap,
+.monaco-editor .decorationsOverviewRuler {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+[data-theme="light"] .monaco-editor,
+[data-theme="light"] .monaco-editor .margin,
+[data-theme="light"] .monaco-editor-background,
+[data-theme="light"] .monaco-editor .monaco-scrollable-element {
+  background-color: #eff1f5 !important;
+}
+

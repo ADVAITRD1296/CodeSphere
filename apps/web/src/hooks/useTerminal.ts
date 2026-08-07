@@ -44,7 +44,10 @@ export function useTerminal(socket: Socket | null) {
 
   const runCode = useCallback(
     (language: ProgrammingLanguage, code: string) => {
-      if (!socket || isRunningRef.current) return;
+      if (!socket) {
+        console.warn('[Terminal] Cannot execute code: socket disconnected');
+        return;
+      }
 
       clearTerminal();
       isRunningRef.current = true;
@@ -55,7 +58,7 @@ export function useTerminal(socket: Socket | null) {
         {
           id: 'system-start',
           type: 'system',
-          content: `\x1b[90m[${timestamp}] Starting execution...\x1b[0m`,
+          content: `\x1b[90m[${timestamp}] Executing ${language} code…\x1b[0m`,
           timestamp: Date.now(),
         },
       ]);

@@ -99,6 +99,14 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
     }
   }, [editorInstance, activeFile, locks, currentUserId]);
 
+  // ─── Dynamic Monaco Theme Conversion Effect (Dark / Light Mode) ───────────
+  useEffect(() => {
+    const monaco = (window as any).monaco;
+    if (!monaco) return;
+    const targetTheme = theme === 'light' ? 'catppuccin-latte' : 'catppuccin-mocha';
+    monaco.editor.setTheme(targetTheme);
+  }, [theme]);
+
   // ─── Keydown Edit Interception Guard ───────────────────────────────────────
   useEffect(() => {
     if (!editorInstance || !isRangeLockedByOther) return;
