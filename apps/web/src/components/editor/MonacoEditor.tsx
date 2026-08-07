@@ -55,6 +55,8 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
 }) => {
   const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
   const [interceptBanner, setInterceptBanner] = useState<string | null>(null);
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, col: 1 });
+  const [dirtyFileIds, setDirtyFileIds] = useState<Set<string>>(new Set());
   const decorationsCollectionRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const bannerTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -155,6 +157,69 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
 
   // ─── Configure Language Services Before Monaco Mounts ──────────────────
   const handleBeforeMount: BeforeMount = useCallback((monaco) => {
+    // ─── Register Catppuccin Mocha Theme ────────────────────────────────
+    monaco.editor.defineTheme('catppuccin-mocha', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: '', foreground: 'cdd6f4', background: '1e1e2e' },
+        { token: 'comment', foreground: '6c7086', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'cba6f7' },
+        { token: 'keyword.operator', foreground: '89dceb' },
+        { token: 'string', foreground: 'a6e3a1' },
+        { token: 'string.escape', foreground: 'f38ba8' },
+        { token: 'number', foreground: 'fab387' },
+        { token: 'operator', foreground: '89dceb' },
+        { token: 'type', foreground: 'f9e2af' },
+        { token: 'class', foreground: 'f9e2af' },
+        { token: 'interface', foreground: '94e2d5' },
+        { token: 'function', foreground: '89b4fa' },
+        { token: 'variable', foreground: 'cdd6f4' },
+        { token: 'variable.predefined', foreground: 'f38ba8' },
+        { token: 'constant', foreground: 'fab387' },
+        { token: 'punctuation', foreground: 'cdd6f4' },
+        { token: 'delimiter', foreground: '6c7086' },
+        { token: 'tag', foreground: 'f38ba8' },
+        { token: 'attribute.name', foreground: '89b4fa' },
+        { token: 'attribute.value', foreground: 'a6e3a1' },
+        { token: 'metatag', foreground: 'f38ba8' },
+        { token: 'annotation', foreground: 'cba6f7' },
+        { token: 'regexp', foreground: 'f38ba8' },
+        { token: 'invalid', foreground: 'f38ba8', fontStyle: 'underline' },
+      ],
+      colors: {
+        'editor.background': '#1e1e2e',
+        'editor.foreground': '#cdd6f4',
+        'editor.selectionBackground': '#45475a',
+        'editor.inactiveSelectionBackground': '#313244',
+        'editor.lineHighlightBackground': '#252535',
+        'editorCursor.foreground': '#cba6f7',
+        'editorWhitespace.foreground': '#313244',
+        'editorIndentGuide.background': '#313244',
+        'editorIndentGuide.activeBackground': '#45475a',
+        'editorLineNumber.foreground': '#45475a',
+        'editorLineNumber.activeForeground': '#cba6f7',
+        'editorGutter.background': '#1e1e2e',
+        'editorBracketMatch.background': '#45475a44',
+        'editorBracketMatch.border': '#89b4fa',
+        'editor.wordHighlightBackground': '#45475a66',
+        'editor.findMatchBackground': '#f9e2af33',
+        'editor.findMatchHighlightBackground': '#f9e2af1a',
+        'editorSuggestWidget.background': '#1e1e2e',
+        'editorSuggestWidget.border': '#313244',
+        'editorSuggestWidget.foreground': '#cdd6f4',
+        'editorSuggestWidget.selectedBackground': '#313244',
+        'editorSuggestWidget.highlightForeground': '#89b4fa',
+        'editorHoverWidget.background': '#181825',
+        'editorHoverWidget.border': '#313244',
+        'scrollbarSlider.background': '#45475a88',
+        'scrollbarSlider.hoverBackground': '#45475a',
+        'scrollbarSlider.activeBackground': '#585b70',
+        'minimap.background': '#181825',
+        'editorOverviewRuler.border': '#1e1e2e',
+      },
+    });
+
     if (providersRegistered) return;
     providersRegistered = true;
     // JavaScript & TypeScript IntelliSense configuration
@@ -333,17 +398,22 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
 
   const handleEditorMount: OnMount = (editor) => {
     setEditorInstance(editor);
+    // Track cursor position for status bar
+    editor.onDidChangeCursorPosition((e) => {
+      setCursorPosition({ line: e.position.lineNumber, col: e.position.column });
+    });
   };
 
   const openFiles = allFiles.filter(f => openFileIds.includes(f.id));
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#1e1e2e' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--base)' }}>
       {/* File Tabs Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#181825', borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: '38px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--mantle)', borderBottom: '1px solid var(--border)', minHeight: '38px' }}>
+        <div className="editor-tabs-scroll" style={{ display: 'flex', alignItems: 'center', overflowX: 'auto', flex: 1 }}>
           {openFiles.map(file => {
             const isActive = activeFile?.id === file.id;
+            const isDirty = dirtyFileIds.has(file.id);
             return (
               <div
                 key={file.id}
@@ -351,19 +421,26 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
+                  gap: '6px',
+                  padding: '0 12px',
+                  height: '38px',
                   cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  backgroundColor: isActive ? '#1e1e2e' : 'transparent',
-                  borderTop: isActive ? '2px solid #89b4fa' : '2px solid transparent',
-                  borderRight: '1px solid rgba(255,255,255,0.05)',
-                  color: isActive ? '#ffffff' : '#9399b2',
-                  userSelect: 'none'
+                  fontSize: '0.83rem',
+                  backgroundColor: isActive ? 'var(--base)' : 'transparent',
+                  borderTop: isActive ? '2px solid var(--blue)' : '2px solid transparent',
+                  borderRight: '1px solid var(--border)',
+                  color: isActive ? 'var(--text)' : 'var(--subtext0)',
+                  userSelect: 'none',
+                  flexShrink: 0,
+                  transition: 'background 0.1s',
                 }}
               >
-                <FileCode size={14} style={{ color: isActive ? '#89b4fa' : '#6c7086' }} />
-                <span>{file.name}</span>
+                <FileCode size={13} style={{ color: isActive ? 'var(--blue)' : 'var(--overlay0)', flexShrink: 0 }} />
+                <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                {/* Dirty indicator dot */}
+                {isDirty && (
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--peach)', flexShrink: 0 }} />
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -372,17 +449,18 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: '#6c7086',
+                    color: 'var(--overlay0)',
                     cursor: 'pointer',
                     padding: '2px',
                     display: 'flex',
                     alignItems: 'center',
-                    borderRadius: '3px'
+                    borderRadius: '3px',
+                    flexShrink: 0,
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#f38ba8')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '#6c7086')}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--red)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--overlay0)')}
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               </div>
             );
@@ -450,93 +528,139 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
         )}
 
         {activeFile ? (
-          <Editor
-            height="100%"
-            language={getMonacoLanguage(activeFile.language)}
-            defaultValue={activeFile.content}
-            theme="vs-dark"
-            beforeMount={handleBeforeMount}
-            onMount={handleEditorMount}
-            onChange={(val) => onChangeContent && onChangeContent(val || '')}
-            options={{
-              readOnly: isReadOnly,
-              fontSize: 14,
-              fontFamily: "'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace",
-              fontLigatures: true,
-              glyphMargin: true,
-              minimap: { enabled: true },
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              tabSize: 2,
-              wordWrap: 'on',
-              lineNumbers: 'on',
-              folding: true,
-              bracketPairColorization: { enabled: true },
-              smoothScrolling: true,
-              cursorBlinking: 'smooth',
-              suggestOnTriggerCharacters: true,
-              acceptSuggestionOnEnter: 'on',
-              tabCompletion: 'on',
-              wordBasedSuggestions: 'allDocuments',
-              snippetSuggestions: 'inline',
-              quickSuggestions: {
-                other: true,
-                comments: false,
-                strings: true,
-              },
-              suggest: {
-                showKeywords: true,
-                showSnippets: true,
-                showFunctions: true,
-                showClasses: true,
-                showVariables: true,
-                showModules: true,
-                showConstructors: true,
-                showFields: true,
-                showInterfaces: true,
-                showStructs: true,
-                showEvents: true,
-                showOperators: true,
-                showUnits: true,
-                showValues: true,
-                showConstants: true,
-                showEnums: true,
-                showEnumMembers: true,
-                showTypeParameters: true,
-                showColors: true,
-                showFiles: true,
-                showReferences: true,
-                showWords: true,
-                showProperties: true,
-                showMethods: true,
-                insertMode: 'replace',
-                filterGraceful: true,
-                snippetsPreventQuickSuggestions: false,
-                localityBonus: true,
-                shareSuggestSelections: true,
-                showIcons: true,
-                preview: true,
-              },
-              parameterHints: { enabled: true, cycle: true },
-              inlineSuggest: { enabled: true },
-              formatOnPaste: true,
-              formatOnType: true,
-              autoClosingBrackets: 'always',
-              autoClosingQuotes: 'always',
-              autoIndent: 'full',
-              autoSurround: 'languageDefined',
-              linkedEditing: true,
-              matchBrackets: 'always',
-              renderWhitespace: 'selection',
-              guides: {
-                bracketPairs: true,
-                indentation: true,
-              },
-            }}
-          />
+          <>
+            {/* Breadcrumb Bar */}
+            <div style={{
+              height: '26px',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 14px',
+              gap: '6px',
+              backgroundColor: 'var(--base)',
+              borderBottom: '1px solid var(--border)',
+              fontSize: '0.75rem',
+              color: 'var(--subtext0)',
+              flexShrink: 0,
+            }}>
+              <FileCode size={12} style={{ color: 'var(--blue)', flexShrink: 0 }} />
+              <span style={{ color: 'var(--overlay0)' }}>{activeFile.language.toLowerCase()}</span>
+              <span style={{ color: 'var(--overlay0)' }}>›</span>
+              <span style={{ color: 'var(--text)', fontWeight: 600 }}>{activeFile.name}</span>
+              {isReadOnly && (
+                <span style={{ marginLeft: '6px', padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(243,139,168,0.15)', color: 'var(--red)', fontSize: '0.7rem' }}>Read Only</span>
+              )}
+            </div>
+
+            {/* Monaco Editor */}
+            <Editor
+              height="100%"
+              language={getMonacoLanguage(activeFile.language)}
+              defaultValue={activeFile.content}
+              theme="catppuccin-mocha"
+              beforeMount={handleBeforeMount}
+              onMount={handleEditorMount}
+              onChange={(val) => {
+                if (onChangeContent) {
+                  onChangeContent(val || '');
+                  // Mark file as dirty
+                  setDirtyFileIds(prev => new Set(prev).add(activeFile.id));
+                }
+              }}
+              options={{
+                readOnly: isReadOnly,
+                fontSize: 14,
+                fontFamily: "'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace",
+                fontLigatures: true,
+                glyphMargin: true,
+                minimap: { enabled: true, scale: 1 },
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                tabSize: 2,
+                wordWrap: 'on',
+                lineNumbers: 'on',
+                folding: true,
+                bracketPairColorization: { enabled: true },
+                smoothScrolling: true,
+                cursorBlinking: 'smooth',
+                cursorSmoothCaretAnimation: 'on',
+                suggestOnTriggerCharacters: true,
+                acceptSuggestionOnEnter: 'on',
+                tabCompletion: 'on',
+                wordBasedSuggestions: 'allDocuments',
+                snippetSuggestions: 'inline',
+                quickSuggestions: { other: true, comments: false, strings: true },
+                suggest: {
+                  showKeywords: true, showSnippets: true, showFunctions: true,
+                  showClasses: true, showVariables: true, showModules: true,
+                  showConstructors: true, showFields: true, showInterfaces: true,
+                  showStructs: true, showEvents: true, showOperators: true,
+                  showUnits: true, showValues: true, showConstants: true,
+                  showEnums: true, showEnumMembers: true, showTypeParameters: true,
+                  showColors: true, showFiles: true, showReferences: true,
+                  showWords: true, showProperties: true, showMethods: true,
+                  insertMode: 'replace', filterGraceful: true,
+                  snippetsPreventQuickSuggestions: false, localityBonus: true,
+                  shareSuggestSelections: true, showIcons: true, preview: true,
+                },
+                parameterHints: { enabled: true, cycle: true },
+                inlineSuggest: { enabled: true },
+                formatOnPaste: true, formatOnType: true,
+                autoClosingBrackets: 'always', autoClosingQuotes: 'always',
+                autoIndent: 'full', autoSurround: 'languageDefined',
+                linkedEditing: true, matchBrackets: 'always',
+                renderWhitespace: 'selection',
+                guides: { bracketPairs: true, indentation: true },
+                padding: { top: 8, bottom: 8 },
+              }}
+            />
+
+            {/* Status Bar */}
+            <div style={{
+              height: '22px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0 12px',
+              backgroundColor: 'var(--blue)',
+              color: '#1e1e2e',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              flexShrink: 0,
+              gap: '16px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <span>Ln {cursorPosition.line}, Col {cursorPosition.col}</span>
+                <span>{activeFile.language}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {isSynced
+                  ? <span>● Live Sync</span>
+                  : <span style={{ color: '#fab387' }}>● Syncing…</span>
+                }
+                {isReadOnly && <span style={{ color: '#f38ba8' }}>🔒 View Only</span>}
+              </div>
+            </div>
+          </>
         ) : (
-          <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#6c7086', fontSize: '0.95rem' }}>
-            No file open. Select a file from the explorer sidebar to edit.
+          <div style={{
+            display: 'flex',
+            height: '100%',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            color: 'var(--overlay0)',
+            userSelect: 'none',
+          }}>
+            <FileCode size={48} style={{ opacity: 0.3 }} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--subtext0)', marginBottom: '6px' }}>
+                No File Open
+              </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--overlay0)' }}>
+                Select a file from the explorer to start editing
+              </div>
+            </div>
           </div>
         )}
       </div>
