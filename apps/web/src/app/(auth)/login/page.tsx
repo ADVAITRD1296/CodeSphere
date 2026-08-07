@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Code2, LogIn, AlertCircle } from 'lucide-react';
+import { Code2, LogIn, AlertCircle, X } from 'lucide-react';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { apiFetch } from '../../../lib/api';
 
@@ -38,7 +38,39 @@ export default function LoginPage() {
 
   return (
     <div className="auth-bg">
-      <div className="glass-panel animate-scale-in" style={{ width: '100%', maxWidth: '440px', padding: '44px 40px' }}>
+      <div className="glass-panel animate-scale-in" style={{ width: '100%', maxWidth: '440px', padding: '44px 40px', position: 'relative' }}>
+
+        {/* Close button — goes back to home page */}
+        <Link
+          href="/"
+          aria-label="Back to home"
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            color: 'var(--overlay1)',
+            backgroundColor: 'transparent',
+            border: '1px solid var(--border)',
+            transition: 'all 0.15s ease',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'var(--surface0)';
+            (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'transparent';
+            (e.currentTarget as HTMLAnchorElement).style.color = 'var(--overlay1)';
+          }}
+        >
+          <X size={16} strokeWidth={2.5} />
+        </Link>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <div style={{
