@@ -184,6 +184,8 @@ export function useVoiceCall(socket: Socket | null, workspaceId: string | null) 
 
       setupSpeakingDetection(stream);
 
+      // Notify room peers about incoming call before joining
+      socket.emit(SOCKET_EVENTS.VOICE.CALL_INCOMING);
       // Join Voice Room on Socket.io Signaling Gateway
       socket.emit(SOCKET_EVENTS.VOICE.JOIN);
     } catch (err: any) {

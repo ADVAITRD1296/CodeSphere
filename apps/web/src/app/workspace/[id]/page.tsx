@@ -35,6 +35,7 @@ import { VideoConferenceModal } from '../../../components/video/VideoConferenceM
 import { WhiteboardModal } from '../../../components/whiteboard/WhiteboardModal';
 import { RightCollabPanel, CollabTab } from '../../../components/layout/RightCollabPanel';
 import { LeftSidebar } from '../../../components/layout/LeftSidebar';
+import { IncomingCallToast, IncomingCallData } from '../../../components/calls/IncomingCallToast';
 import { useTerminal } from '../../../hooks/useTerminal';
 import { usePresence } from '../../../hooks/usePresence';
 import { useVoiceCall } from '../../../hooks/useVoiceCall';
@@ -171,13 +172,50 @@ export default function WorkspaceIDEPage() {
     };
   }, [socket, user?.id]);
 
-  const handleSendChatMessage = useCallback((content: string) => {
-    if (!socket || !workspaceId) return;
-    socket.emit(SOCKET_EVENTS.CHAT.SEND_MESSAGE, {
-      workspaceId,
-      message: content,
-    });
-  }, [socket, workspaceId]);
+  // Incoming Call State
+  const [incomingCallData, setIncomingCallData] = useState<IncomingCallData | null>(null);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleVoiceIncoming = (data: IncomingCallData) => {
+      if (data.callerUserId !== user?.id && !isInVoice && !isInVideo) {
+        setIncomingCallData(data);
+      }
+    };
+
+    const handleVideoIncoming = (data: IncomingCallData) => {
+      if (data.callerUserId !== user?.id && !isInVoice && !isInVideo) {
+        setIncomingCallData(data);
+      }
+    };
+
+    socket.on(SOCKET_EVENTS.VOICE.CALL_INCOMING, handleVoiceIncoming);
+    socket.on(SOCKET_EVENTS.VIDEO.CALL_INCOMING, handleVideoIncoming);
+
+    return () => {
+      socket.off(SOCKET_EVENTS.VOICE.CALL_INCOMING, handleVoiceIncoming);
+      socket.off(SOCKET_EVENTS.VIDEO.CALL_INCOMING, handleVideoIncoming);
+    };
+  }, [socket, user?.id, isInVoice, isInVideo]);
+
+  const handleAcceptCall = useCallback(() => {
+    if (!incomingCallData) return;
+    if (incomingCallData.callType === 'VOICE') {
+      joinVoiceCall();
+      setActiveCollabTab('voice');
+      setShowRightCollabPanel(true);
+    } else {
+      joinVideoCall();
+      setActiveCollabTab('video');
+      setShowRightCollabPanel(true);
+    }
+    setIncomingCallData(null);
+  }, [incomingCallData, joinVoiceCall, joinVideoCall]);
+
+  const handleDeclineCall = useCallback(() => {
+    setIncomingCallData(null);
+  }, []);
 
 
   // Resize logic
@@ -283,6 +321,14 @@ export default function WorkspaceIDEPage() {
     if (terminalCollapsed) setTerminalCollapsed(false);
     runCode(language, code);
   }, [terminalCollapsed, runCode]);
+
+  const handleSendChatMessage = useCallback((content: string) => {
+    if (!socket || !workspaceId) return;
+    socket.emit(SOCKET_EVENTS.CHAT.SEND_MESSAGE, {
+      workspaceId,
+      message: content,
+    });
+  }, [socket, workspaceId]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--crust)', color: 'var(--text)', overflow: 'hidden' }}>
@@ -632,6 +678,13 @@ export default function WorkspaceIDEPage() {
           </div>
         </div>
       )}
+
+      {/* ─── Incoming Call Toast Notification ──────────────────────────────── */}
+      <IncomingCallToast
+        callData={incomingCallData}
+        onAccept={handleAcceptCall}
+        onDecline={handleDeclineCall}
+      />
     </div>
   );
 }

@@ -403,6 +403,28 @@ export function setupSocketGateway(server: http.Server) {
       }
     });
 
+    socket.on(SOCKET_EVENTS.VOICE.CALL_INCOMING, () => {
+      if (currentWorkspaceId && currentUser) {
+        socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.VOICE.CALL_INCOMING, {
+          callerSocketId: socket.id,
+          callerUserId: currentUser.userId,
+          callerUsername: currentUser.username,
+          callType: 'VOICE'
+        });
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.VIDEO.CALL_INCOMING, () => {
+      if (currentWorkspaceId && currentUser) {
+        socket.to(currentWorkspaceId).emit(SOCKET_EVENTS.VIDEO.CALL_INCOMING, {
+          callerSocketId: socket.id,
+          callerUserId: currentUser.userId,
+          callerUsername: currentUser.username,
+          callType: 'VIDEO'
+        });
+      }
+    });
+
     socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, ({ workspaceId, message }) => {
       if (!currentUser) return;
       const chatMsg: ChatMessageDto = {

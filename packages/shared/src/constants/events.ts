@@ -19,6 +19,8 @@ export const SOCKET_EVENTS = {
     STATE_UPDATE: 'voice:state-update',
     PEER_JOINED: 'voice:peer-joined',
     PEER_LEFT: 'voice:peer-left',
+    CALL_INCOMING: 'voice:call-incoming',
+    CALL_DECLINED: 'voice:call-declined',
   },
   VIDEO: {
     JOIN: 'video:join',
@@ -27,6 +29,8 @@ export const SOCKET_EVENTS = {
     STATE_UPDATE: 'video:state-update',
     PEER_JOINED: 'video:peer-joined',
     PEER_LEFT: 'video:peer-left',
+    CALL_INCOMING: 'video:call-incoming',
+    CALL_DECLINED: 'video:call-declined',
   },
   EXECUTION: {
     SUBMIT: 'execution:submit',

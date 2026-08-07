@@ -165,6 +165,8 @@ export function useVideoCall(socket: Socket | null, workspaceId: string | null) 
     setIsCameraOn(true);
     setIsMicOn(true);
 
+    // Notify room peers about incoming video call
+    socket.emit(SOCKET_EVENTS.VIDEO.CALL_INCOMING);
     socket.emit(SOCKET_EVENTS.VIDEO.JOIN);
   }, [socket, workspaceId, selectedDeviceId, startCameraPreview]);
 
