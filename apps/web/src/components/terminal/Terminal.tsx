@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, memo, useCallback, useState } from 'react';
-import { Play, Trash2, ChevronDown, ChevronUp, Terminal as TerminalIcon, Send, StopCircle } from 'lucide-react';
+import { Play, Trash2, ChevronDown, ChevronUp, Terminal as TerminalIcon, Send, StopCircle, Copy, Download } from 'lucide-react';
 import { ProgrammingLanguage } from '@codesphere/shared';
 import { TerminalLine, TerminalSession } from '../../hooks/useTerminal';
 
@@ -365,25 +365,85 @@ export const TerminalPanel = memo(({
 
           {/* Clear Button */}
           {!isCollapsed && lines.length > 0 && !isRunning && (
-            <button
-              onClick={onClear}
-              title="Clear terminal"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: 'transparent',
-                border: 'none',
-                color: '#585b70',
-                cursor: 'pointer',
-                padding: '3px',
-                borderRadius: '4px',
-                transition: 'color 0.15s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#cdd6f4')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#585b70')}
-            >
-              <Trash2 size={13} />
-            </button>
+            <>
+              {/* Copy Terminal Log */}
+              <button
+                onClick={() => {
+                  const logText = lines.map(l => l.content).join('\n');
+                  navigator.clipboard.writeText(logText);
+                }}
+                title="Copy terminal output to clipboard"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--subtext0)',
+                  cursor: 'pointer',
+                  padding: '3px 6px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  transition: 'color 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--subtext0)')}
+              >
+                <Copy size={13} />
+              </button>
+
+              {/* Download Terminal Log */}
+              <button
+                onClick={() => {
+                  const logText = lines.map(l => l.content).join('\n');
+                  const blob = new Blob([logText], { type: 'text/plain;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `codesphere-terminal-${Date.now()}.log`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                title="Download terminal log file"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--subtext0)',
+                  cursor: 'pointer',
+                  padding: '3px 6px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  transition: 'color 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--subtext0)')}
+              >
+                <Download size={13} />
+              </button>
+
+              <button
+                onClick={onClear}
+                title="Clear terminal"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--subtext0)',
+                  cursor: 'pointer',
+                  padding: '3px',
+                  borderRadius: '4px',
+                  transition: 'color 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--red)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--subtext0)')}
+              >
+                <Trash2 size={13} />
+              </button>
+            </>
           )}
 
           {/* Collapse Toggle */}
