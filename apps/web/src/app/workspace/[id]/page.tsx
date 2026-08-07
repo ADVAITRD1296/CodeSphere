@@ -34,6 +34,7 @@ import { VoiceCallControl } from '../../../components/voice/VoiceCallControl';
 import { VideoConferenceModal } from '../../../components/video/VideoConferenceModal';
 import { WhiteboardModal } from '../../../components/whiteboard/WhiteboardModal';
 import { RightCollabPanel, CollabTab } from '../../../components/layout/RightCollabPanel';
+import { LeftSidebar } from '../../../components/layout/LeftSidebar';
 import { useTerminal } from '../../../hooks/useTerminal';
 import { usePresence } from '../../../hooks/usePresence';
 import { useVoiceCall } from '../../../hooks/useVoiceCall';
@@ -412,10 +413,15 @@ export default function WorkspaceIDEPage() {
 
       {/* Main IDE 4-Panel Layout Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* 1. Left Sidebar File Tree */}
-        <div style={{ width: '260px', height: '100%', flexShrink: 0 }}>
-          <FileTree workspaceId={workspaceId} userRole={userRole} />
-        </div>
+        {/* 1. Left Sidebar Navigation + File Tree */}
+        <LeftSidebar
+          workspaceId={workspaceId}
+          userRole={userRole}
+          activeFileName={activeFile?.name}
+          onOpenSnapshot={() => setShowSnapshot(true)}
+          onOpenWhiteboard={() => setShowWhiteboardModal(true)}
+          onOpenSettings={() => setShowSettings(true)}
+        />
 
         {/* 2 & 3. Center Column: Monaco Code Editor + Bottom Terminal */}
         <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
