@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, memo, useCallback, useState } from 'react';
-import { Play, Trash2, ChevronDown, ChevronUp, Terminal as TerminalIcon, Send, StopCircle, Copy, Download } from 'lucide-react';
+import { Play, Trash2, ChevronDown, ChevronUp, Terminal as TerminalIcon, StopCircle, Copy, Download } from 'lucide-react';
 import { ProgrammingLanguage } from '@codesphere/shared';
 import { TerminalLine, TerminalSession } from '../../hooks/useTerminal';
 
@@ -187,11 +187,10 @@ export const TerminalPanel = memo(({
     (e: React.FormEvent) => {
       e.preventDefault();
       const val = stdinValue;
-      if (!val.trim() && val !== '') {
-        // allow empty sends (user just pressed Enter)
-      }
       onSendInput(val);
       setStdinValue('');
+      // Keep focus on the inline input after sending
+      setTimeout(() => inputRef.current?.focus(), 0);
     },
     [stdinValue, onSendInput]
   );
@@ -547,93 +546,6 @@ export const TerminalPanel = memo(({
             </div>
           )}
         </div>
-      )}
-
-      {/* ─── Interactive Stdin Input Bar (Bottom Dock) ──────────────────── */}
-      {!isCollapsed && isRunning && (
-        <form
-          onSubmit={handleSendInput}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '6px 12px',
-            borderTop: '1px solid var(--border)',
-            backgroundColor: 'var(--mantle)',
-            flexShrink: 0,
-            userSelect: 'none',
-          }}
-        >
-          {/* stdin prompt symbol */}
-          <span
-            style={{
-              color: 'var(--sky)',
-              fontFamily: '"JetBrains Mono", monospace',
-              fontSize: '13px',
-              fontWeight: 700,
-              flexShrink: 0,
-              userSelect: 'none',
-            }}
-          >
-            ▶ stdin:
-          </span>
-
-          {/* Input field */}
-          <input
-            type="text"
-            value={stdinValue}
-            onChange={(e) => setStdinValue(e.target.value)}
-            placeholder="Type input and press Enter to send…"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            style={{
-              flex: 1,
-              backgroundColor: 'var(--crust)',
-              border: '1px solid var(--border)',
-              borderRadius: '4px',
-              color: 'var(--text)',
-              fontSize: '13px',
-              fontFamily: '"JetBrains Mono", monospace',
-              padding: '4px 10px',
-              outline: 'none',
-              transition: 'border-color 0.15s',
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-          />
-
-          {/* Send button */}
-          <button
-            type="submit"
-            title="Send input (Enter)"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '4px 10px',
-              backgroundColor: 'rgba(137, 220, 235, 0.12)',
-              color: 'var(--sky)',
-              border: '1px solid rgba(137, 220, 235, 0.25)',
-              borderRadius: '4px',
-              fontSize: '11px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              flexShrink: 0,
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(137, 220, 235, 0.22)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(137, 220, 235, 0.12)';
-            }}
-          >
-            <Send size={11} />
-            Send
-          </button>
-        </form>
       )}
 
       <style>{`
