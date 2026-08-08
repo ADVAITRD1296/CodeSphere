@@ -185,7 +185,7 @@ export const RightCollabPanel: React.FC<RightCollabPanelProps> = memo(({
                     justifyContent: 'space-between',
                     padding: '8px 10px',
                     borderRadius: 'var(--radius-md)',
-                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    backgroundColor: 'var(--surface0)',
                     border: '1px solid var(--border)',
                   }}
                 >
@@ -291,7 +291,7 @@ export const RightCollabPanel: React.FC<RightCollabPanelProps> = memo(({
         {/* ─── 3. VOICE TAB ──────────────────────────────────────────────── */}
         {activeTab === 'voice' && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ textAlign: 'center', padding: '16px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+            <div style={{ textAlign: 'center', padding: '16px', backgroundColor: 'var(--surface0)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
               <Volume2 size={32} style={{ color: isInVoice ? 'var(--green)' : 'var(--overlay0)', margin: '0 auto 8px' }} />
               <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text)' }}>
                 {isInVoice ? 'Connected to Voice' : 'Voice Channel Idle'}
@@ -336,14 +336,14 @@ export const RightCollabPanel: React.FC<RightCollabPanelProps> = memo(({
                   Voice Participants
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--surface0)', border: '1px solid var(--border)' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isSpeaking ? 'var(--green)' : 'var(--overlay0)' }} />
                     <span style={{ fontSize: '0.82rem', color: 'var(--text)', fontWeight: 600 }}>You</span>
                     {isMuted && <MicOff size={12} color="var(--red)" style={{ marginLeft: 'auto' }} />}
                   </div>
 
                   {voicePeers.map((peer) => (
-                    <div key={peer.socketId} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                    <div key={peer.socketId} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--surface0)', border: '1px solid var(--border)' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: peer.isSpeaking ? 'var(--green)' : 'var(--overlay0)' }} />
                       <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>{peer.username}</span>
                       {peer.isMuted && <MicOff size={12} color="var(--red)" style={{ marginLeft: 'auto' }} />}

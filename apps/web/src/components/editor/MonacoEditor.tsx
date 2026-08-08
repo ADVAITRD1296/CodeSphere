@@ -567,7 +567,7 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
 
           {/* Sync Status Badge */}
           {activeFile && (
-            <div style={{ padding: '0 8px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', color: isSynced ? '#a6e3a1' : '#fab387' }}>
+            <div style={{ padding: '0 8px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', color: isSynced ? 'var(--green)' : 'var(--peach)' }}>
               {isSynced ? <Wifi size={13} /> : <WifiOff size={13} />}
               <span>{isSynced ? 'Live Sync' : 'Connecting'}</span>
             </div>
@@ -684,23 +684,24 @@ export const MonacoEditorComponent: React.FC<MonacoEditorProps> = memo(({
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '0 12px',
-              backgroundColor: 'var(--blue)',
-              color: '#1e1e2e',
+              backgroundColor: 'var(--mantle)',
+              borderTop: '1px solid var(--border)',
+              color: 'var(--subtext0)',
               fontSize: '0.72rem',
-              fontWeight: 600,
+              fontWeight: 500,
               flexShrink: 0,
               gap: '16px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <span>Ln {cursorPosition.line}, Col {cursorPosition.col}</span>
-                <span>{activeFile.language}</span>
+                <span style={{ color: 'var(--text)', fontWeight: 600 }}>{activeFile.language}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {isSynced
-                  ? <span>● Live Sync</span>
-                  : <span style={{ color: '#fab387' }}>● Syncing…</span>
+                  ? <span style={{ color: 'var(--green)' }}>● Live Sync</span>
+                  : <span style={{ color: 'var(--peach)' }}>● Syncing…</span>
                 }
-                {isReadOnly && <span style={{ color: '#f38ba8' }}>🔒 View Only</span>}
+                {isReadOnly && <span style={{ color: 'var(--red)' }}>🔒 View Only</span>}
               </div>
             </div>
           </div>

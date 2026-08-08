@@ -75,10 +75,10 @@ export const FileTree: React.FC<FileTreeProps> = ({ workspaceId, userRole }) => 
   const rootFolders = activeWorkspace.folders.filter(f => !f.parentId);
 
   return (
-    <div style={{ width: '100%', height: '100%', backgroundColor: '#181825', color: '#cdd6f4', display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+    <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--mantle)', color: 'var(--text)', display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
       {/* Sidebar Header */}
-      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <span style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9399b2' }}>
+      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
+        <span style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--subtext0)' }}>
           Explorer
         </span>
 
@@ -87,16 +87,18 @@ export const FileTree: React.FC<FileTreeProps> = ({ workspaceId, userRole }) => 
             <button
               onClick={() => { setSelectedFolderId(undefined); setShowNewFileModal(true); }}
               title="New File"
-              style={{ background: 'transparent', border: 'none', color: '#a6adc8', cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
+              className="ide-icon-btn"
+              style={{ width: '26px', height: '26px' }}
             >
-              <FilePlus size={16} />
+              <FilePlus size={15} />
             </button>
             <button
               onClick={() => { setSelectedFolderId(undefined); setShowNewFolderModal(true); }}
               title="New Folder"
-              style={{ background: 'transparent', border: 'none', color: '#a6adc8', cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
+              className="ide-icon-btn"
+              style={{ width: '26px', height: '26px' }}
             >
-              <FolderPlus size={16} />
+              <FolderPlus size={15} />
             </button>
           </div>
         )}
@@ -151,12 +153,12 @@ export const FileTree: React.FC<FileTreeProps> = ({ workspaceId, userRole }) => 
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#9399b2', marginBottom: '6px' }}>Language</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--subtext0)', marginBottom: '6px' }}>Language</label>
                 <select
                   className="input-field"
                   value={newFileLang}
                   onChange={(e) => setNewFileLang(e.target.value as ProgrammingLanguage)}
-                  style={{ backgroundColor: '#1e1e2e' }}
+                  style={{ backgroundColor: 'var(--crust)', color: 'var(--text)' }}
                 >
                   <option value="JAVASCRIPT">JavaScript</option>
                   <option value="TYPESCRIPT">TypeScript</option>
@@ -217,13 +219,13 @@ const FolderNode: React.FC<FolderNodeProps> = ({
           gap: '6px',
           padding: '6px 16px',
           cursor: 'pointer',
-          fontSize: '0.9rem',
-          color: '#cdd6f4',
+          fontSize: '0.88rem',
+          color: 'var(--text)',
           userSelect: 'none'
         }}
       >
         {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        {isExpanded ? <FolderOpen size={16} color="#89b4fa" /> : <Folder size={16} color="#89b4fa" />}
+        {isExpanded ? <FolderOpen size={16} color="var(--blue)" /> : <Folder size={16} color="var(--blue)" />}
         <span>{folder.name}</span>
       </div>
 
@@ -274,7 +276,7 @@ const FileNode: React.FC<FileNodeProps> = ({ file, isActive, onSelect, onDelete,
       case 'PYTHON': return '#3572A5';
       case 'CPP': return '#f34b7d';
       case 'GO': return '#00ADD8';
-      default: return '#89b4fa';
+      default: return 'var(--blue)';
     }
   };
 
@@ -289,14 +291,14 @@ const FileNode: React.FC<FileNodeProps> = ({ file, isActive, onSelect, onDelete,
         cursor: 'pointer',
         fontSize: '0.88rem',
         backgroundColor: isActive ? 'rgba(137, 180, 250, 0.15)' : 'transparent',
-        borderLeft: isActive ? '3px solid #89b4fa' : '3px solid transparent',
-        color: isActive ? '#ffffff' : '#a6adc8',
+        borderLeft: isActive ? '3px solid var(--blue)' : '3px solid transparent',
+        color: isActive ? 'var(--text)' : 'var(--subtext0)',
         transition: 'all 0.15s ease'
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <FileCode size={16} color={getLanguageColor(file.language)} />
-        <span>{file.name}</span>
+        <span style={{ fontWeight: isActive ? 600 : 400 }}>{file.name}</span>
       </div>
 
       {!isReadOnly && (
@@ -306,7 +308,7 @@ const FileNode: React.FC<FileNodeProps> = ({ file, isActive, onSelect, onDelete,
           style={{
             background: 'transparent',
             border: 'none',
-            color: '#f38ba8',
+            color: 'var(--red)',
             opacity: 0.6,
             cursor: 'pointer',
             padding: '2px'

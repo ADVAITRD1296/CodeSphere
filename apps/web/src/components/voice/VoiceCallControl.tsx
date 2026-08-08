@@ -53,24 +53,14 @@ export const VoiceCallControl: React.FC<VoiceCallControlProps> = ({
         <button
           onClick={onJoin}
           title="Join Room Voice Call"
+          className="ide-pill-btn"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 12px',
-            backgroundColor: '#313244',
-            color: '#a6e3a1',
-            border: '1px solid rgba(166,227,161,0.2)',
-            borderRadius: '6px',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.15s ease'
+            color: 'var(--green)',
+            borderColor: 'rgba(166, 227, 161, 0.3)',
+            backgroundColor: 'rgba(166, 227, 161, 0.1)'
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(166,227,161,0.15)')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#313244')}
         >
-          <PhoneCall size={14} color="#a6e3a1" />
+          <PhoneCall size={13} color="var(--green)" />
           <span>Join Voice</span>
         </button>
       ) : (
@@ -78,10 +68,10 @@ export const VoiceCallControl: React.FC<VoiceCallControlProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          backgroundColor: '#181825',
+          backgroundColor: 'var(--mantle)',
           padding: '4px 8px',
-          borderRadius: '8px',
-          border: '1px solid #313244'
+          borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border)'
         }}>
           {/* Speaking Indicator & Mic Status Button */}
           <button
@@ -92,24 +82,24 @@ export const VoiceCallControl: React.FC<VoiceCallControlProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '28px',
-              height: '28px',
+              width: '26px',
+              height: '26px',
               borderRadius: '50%',
-              backgroundColor: isMuted ? '#f38ba8' : isSpeaking ? '#a6e3a1' : '#313244',
-              color: isMuted || isSpeaking ? '#11111b' : '#cdd6f4',
+              backgroundColor: isMuted ? 'var(--red)' : isSpeaking ? 'var(--green)' : 'var(--surface0)',
+              color: isMuted || isSpeaking ? '#11111b' : 'var(--text)',
               border: 'none',
               cursor: 'pointer',
-              boxShadow: isSpeaking ? '0 0 10px #a6e3a1' : 'none',
+              boxShadow: isSpeaking ? '0 0 10px var(--green)' : 'none',
               transition: 'all 0.15s ease'
             }}
           >
-            {isMuted ? <MicOff size={14} /> : <Mic size={14} />}
+            {isMuted ? <MicOff size={13} /> : <Mic size={13} />}
           </button>
 
           {/* Connected Voice Peers Badge */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0 4px' }}>
-            <Radio size={13} color={isSpeaking ? '#a6e3a1' : '#8b5cf6'} className={isSpeaking ? 'animate-pulse' : ''} />
-            <span style={{ fontSize: '0.78rem', color: '#cdd6f4', fontWeight: 600 }}>
+            <Radio size={12} color={isSpeaking ? 'var(--green)' : 'var(--mauve)'} className={isSpeaking ? 'animate-pulse' : ''} />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text)', fontWeight: 600 }}>
               {voicePeers.length + 1} in call
             </span>
           </div>
@@ -125,15 +115,15 @@ export const VoiceCallControl: React.FC<VoiceCallControlProps> = ({
                   width: '22px',
                   height: '22px',
                   borderRadius: '50%',
-                  backgroundColor: '#89b4fa',
+                  backgroundColor: 'var(--blue)',
                   color: '#11111b',
                   fontSize: '0.65rem',
                   fontWeight: 700,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  border: peer.isSpeaking ? '2px solid #a6e3a1' : '1px solid #313244',
-                  boxShadow: peer.isSpeaking ? '0 0 8px #a6e3a1' : 'none'
+                  border: peer.isSpeaking ? '2px solid var(--green)' : '1px solid var(--border)',
+                  boxShadow: peer.isSpeaking ? '0 0 8px var(--green)' : 'none'
                 }}
               >
                 {(peer.username || 'P').charAt(0).toUpperCase()}
@@ -146,7 +136,7 @@ export const VoiceCallControl: React.FC<VoiceCallControlProps> = ({
                       width: '6px',
                       height: '6px',
                       borderRadius: '50%',
-                      backgroundColor: '#f38ba8'
+                      backgroundColor: 'var(--red)'
                     }}
                   />
                 )}

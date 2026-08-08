@@ -68,11 +68,11 @@ function ansiToHtml(text: string): string {
 // ─── Single Terminal Line Renderer ──────────────────────────────────────────
 const TerminalLineItem = memo(({ line }: { line: TerminalLine }) => {
   const baseColorMap: Record<string, string> = {
-    stdout: '#cdd6f4',
-    stderr: '#f38ba8',
-    info:   '#89dceb',
-    system: '#6c7086',
-    stdin:  '#89dceb',
+    stdout: 'var(--text)',
+    stderr: 'var(--red)',
+    info:   'var(--blue)',
+    system: 'var(--subtext0)',
+    stdin:  'var(--sky)',
   };
 
   const html = ansiToHtml(line.content);
@@ -253,8 +253,8 @@ export const TerminalPanel = memo(({
       >
         {/* Left: Icon + Title + Status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <TerminalIcon size={14} style={{ color: '#89b4fa', flexShrink: 0 }} />
-          <span style={{ fontSize: '12px', fontWeight: 600, color: '#9399b2', letterSpacing: '0.05em' }}>
+          <TerminalIcon size={14} style={{ color: 'var(--blue)', flexShrink: 0 }} />
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--subtext0)', letterSpacing: '0.05em' }}>
             TERMINAL
           </span>
           {session && (
@@ -273,7 +273,7 @@ export const TerminalPanel = memo(({
                 {statusDot.label}
               </span>
               {session.durationMs !== undefined && (
-                <span style={{ fontSize: '10px', color: '#585b70' }}>
+                <span style={{ fontSize: '10px', color: 'var(--overlay0)' }}>
                   {session.durationMs}ms
                 </span>
               )}
@@ -318,8 +318,8 @@ export const TerminalPanel = memo(({
                 alignItems: 'center',
                 gap: '5px',
                 padding: '3px 10px',
-                backgroundColor: '#a6e3a1',
-                color: '#1e1e2e',
+                backgroundColor: 'var(--green)',
+                color: '#11111b',
                 border: 'none',
                 borderRadius: '4px',
                 fontSize: '11px',
@@ -344,7 +344,7 @@ export const TerminalPanel = memo(({
                 gap: '5px',
                 padding: '3px 10px',
                 backgroundColor: 'rgba(243, 139, 168, 0.15)',
-                color: '#f38ba8',
+                color: 'var(--red)',
                 border: '1px solid rgba(243, 139, 168, 0.3)',
                 borderRadius: '4px',
                 fontSize: '11px',
@@ -456,14 +456,14 @@ export const TerminalPanel = memo(({
               alignItems: 'center',
               background: 'transparent',
               border: 'none',
-              color: '#585b70',
+              color: 'var(--subtext0)',
               cursor: 'pointer',
               padding: '3px',
               borderRadius: '4px',
               transition: 'color 0.15s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#cdd6f4')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#585b70')}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--subtext0)')}
           >
             {isCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
@@ -480,13 +480,13 @@ export const TerminalPanel = memo(({
             padding: '10px 16px 8px',
             userSelect: 'text',
             scrollbarWidth: 'thin',
-            scrollbarColor: '#313244 transparent',
+            scrollbarColor: 'var(--surface0) transparent',
           }}
         >
           {lines.length === 0 ? (
             <div
               style={{
-                color: '#45475a',
+                color: 'var(--overlay0)',
                 fontSize: '12px',
                 fontFamily: '"JetBrains Mono", monospace',
                 display: 'flex',
@@ -496,7 +496,7 @@ export const TerminalPanel = memo(({
               }}
             >
               <span>$ Welcome to CodeSphere Terminal</span>
-              <span style={{ color: '#313244' }}>
+              <span style={{ color: 'var(--subtext0)' }}>
                 Select a language and click Run to execute the active file.
               </span>
             </div>
@@ -511,7 +511,7 @@ export const TerminalPanel = memo(({
                     display: 'inline-block',
                     width: '8px',
                     height: '14px',
-                    backgroundColor: '#89b4fa',
+                    backgroundColor: 'var(--blue)',
                     marginTop: '2px',
                     animation: 'blink-cursor 1s step-end infinite',
                     verticalAlign: 'middle',
@@ -541,7 +541,7 @@ export const TerminalPanel = memo(({
           {/* stdin prompt symbol */}
           <span
             style={{
-              color: '#89dceb',
+              color: 'var(--sky)',
               fontFamily: '"JetBrains Mono", monospace',
               fontSize: '13px',
               fontWeight: 700,
@@ -565,18 +565,18 @@ export const TerminalPanel = memo(({
             spellCheck={false}
             style={{
               flex: 1,
-              backgroundColor: 'rgba(137, 180, 250, 0.06)',
-              border: '1px solid rgba(137, 180, 250, 0.2)',
+              backgroundColor: 'var(--crust)',
+              border: '1px solid var(--border)',
               borderRadius: '4px',
-              color: '#cdd6f4',
+              color: 'var(--text)',
               fontSize: '13px',
               fontFamily: '"JetBrains Mono", monospace',
               padding: '4px 10px',
               outline: 'none',
               transition: 'border-color 0.15s',
             }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(137, 180, 250, 0.5)')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(137, 180, 250, 0.2)')}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
           />
 
           {/* Send button */}

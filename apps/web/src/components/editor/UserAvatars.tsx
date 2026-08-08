@@ -28,7 +28,7 @@ export const UserAvatars: React.FC<UserAvatarsProps> = ({
   return (
     <div
       onClick={onTogglePresenceSidebar}
-      title="Click to view presence members list"
+      title="Click to view online room members"
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -36,8 +36,8 @@ export const UserAvatars: React.FC<UserAvatarsProps> = ({
         cursor: 'pointer',
         padding: '2px 6px',
         borderRadius: '16px',
-        backgroundColor: '#181825',
-        border: '1px solid #313244'
+        backgroundColor: 'var(--mantle)',
+        border: '1px solid var(--border)'
       }}
     >
       {onlineUsers.slice(0, 5).map(user => {
@@ -56,11 +56,11 @@ export const UserAvatars: React.FC<UserAvatarsProps> = ({
               width: '26px',
               height: '26px',
               borderRadius: '50%',
-              backgroundColor: user.color || '#3b82f6',
+              backgroundColor: user.color || 'var(--blue)',
               color: '#11111b',
               fontSize: '0.75rem',
               fontWeight: 700,
-              border: isSelf ? '2px solid #89b4fa' : '2px solid #181825',
+              border: isSelf ? '2px solid var(--blue)' : '2px solid var(--mantle)',
             }}
           >
             {user.username.charAt(0).toUpperCase()}
@@ -74,7 +74,7 @@ export const UserAvatars: React.FC<UserAvatarsProps> = ({
                 height: '8px',
                 borderRadius: '50%',
                 backgroundColor: statusColor,
-                border: '1px solid #181825'
+                border: '1px solid var(--mantle)'
               }}
             />
           </div>
@@ -84,7 +84,7 @@ export const UserAvatars: React.FC<UserAvatarsProps> = ({
       {onlineUsers.length > 5 && (
         <div style={{
           fontSize: '0.72rem',
-          color: '#a6adc8',
+          color: 'var(--subtext0)',
           fontWeight: 600,
           paddingRight: '4px'
         }}>

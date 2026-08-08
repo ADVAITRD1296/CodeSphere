@@ -149,8 +149,8 @@ export const WorkspaceSettingsModal: React.FC<WorkspaceSettingsProps> = ({
 
   const TAB_STYLE = (active: boolean): React.CSSProperties => ({
     padding: '8px 16px',
-    backgroundColor: active ? '#313244' : 'transparent',
-    color: active ? '#cdd6f4' : '#6c7086',
+    backgroundColor: active ? 'var(--surface0)' : 'transparent',
+    color: active ? 'var(--text)' : 'var(--subtext0)',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
@@ -167,7 +167,7 @@ export const WorkspaceSettingsModal: React.FC<WorkspaceSettingsProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: 'rgba(0,0,0,0.5)',
         backdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
@@ -180,21 +180,21 @@ export const WorkspaceSettingsModal: React.FC<WorkspaceSettingsProps> = ({
         style={{
           width: 'min(90vw, 700px)',
           maxHeight: '85vh',
-          backgroundColor: '#1e1e2e',
+          backgroundColor: 'var(--mantle)',
           borderRadius: '12px',
-          border: '1px solid rgba(137,180,250,0.12)',
+          border: '1px solid var(--border)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+          boxShadow: 'var(--shadow-lg)',
         }}
       >
         {/* Modal Header */}
         <div
           style={{
             height: '56px',
-            backgroundColor: '#181825',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            backgroundColor: 'var(--crust)',
+            borderBottom: '1px solid var(--border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -203,14 +203,14 @@ export const WorkspaceSettingsModal: React.FC<WorkspaceSettingsProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Settings size={18} style={{ color: '#89b4fa' }} />
-            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Workspace Settings</span>
+            <Settings size={18} style={{ color: 'var(--blue)' }} />
+            <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}>Workspace Settings</span>
           </div>
           <button
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: '#6c7086', cursor: 'pointer', padding: '6px', borderRadius: '6px', display: 'flex' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#f38ba8')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#6c7086')}
+            style={{ background: 'transparent', border: 'none', color: 'var(--subtext0)', cursor: 'pointer', padding: '6px', borderRadius: '6px', display: 'flex' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--red)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--subtext0)')}
           >
             <X size={18} />
           </button>
@@ -222,8 +222,8 @@ export const WorkspaceSettingsModal: React.FC<WorkspaceSettingsProps> = ({
             display: 'flex',
             gap: '4px',
             padding: '12px 20px',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            backgroundColor: '#181825',
+            borderBottom: '1px solid var(--border)',
+            backgroundColor: 'var(--crust)',
             flexShrink: 0,
           }}
         >

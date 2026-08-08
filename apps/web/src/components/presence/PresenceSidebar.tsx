@@ -41,32 +41,32 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
   return (
     <div style={{
       width: '260px',
-      backgroundColor: '#11111b',
-      borderLeft: '1px solid #1e1e2e',
+      backgroundColor: 'var(--crust)',
+      borderLeft: '1px solid var(--border)',
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      color: '#cdd6f4',
+      color: 'var(--text)',
       fontSize: '0.85rem'
     }}>
       {/* Header Stat Overview Bar */}
       <div style={{
         padding: '12px 14px',
-        borderBottom: '1px solid #1e1e2e',
+        borderBottom: '1px solid var(--border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#181825'
+        backgroundColor: 'var(--mantle)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: '#f5e0dc' }}>
-          <Users size={16} color="#89b4fa" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: 'var(--text)' }}>
+          <Users size={16} color="var(--blue)" />
           <span>Members</span>
           <span style={{
-            backgroundColor: '#313244',
+            backgroundColor: 'var(--surface0)',
             padding: '2px 7px',
             borderRadius: '10px',
             fontSize: '0.75rem',
-            color: '#a6e3a1'
+            color: 'var(--green)'
           }}>
             {summary.totalOnline}
           </span>
@@ -79,22 +79,22 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
         gridTemplateColumns: '1fr 1fr',
         gap: '6px',
         padding: '10px 14px',
-        borderBottom: '1px solid #1e1e2e',
-        backgroundColor: '#11111b'
+        borderBottom: '1px solid var(--border)',
+        backgroundColor: 'var(--crust)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#a6e3a1' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--green)' }}>
           <Edit3 size={13} />
           <span>Editing: <strong>{summary.editingCount}</strong></span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#89dceb' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--sky)' }}>
           <Eye size={13} />
           <span>Viewing: <strong>{summary.viewingCount}</strong></span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#cba6f7' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--mauve)' }}>
           <Mic size={13} />
           <span>Voice: <strong>{summary.voiceCount}</strong></span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#74c7ec' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--sapphire)' }}>
           <Video size={13} />
           <span>Video: <strong>{summary.videoCount}</strong></span>
         </div>
@@ -107,7 +107,7 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
           fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.5px',
-          color: '#6c7086',
+          color: 'var(--subtext0)',
           marginBottom: '8px',
           paddingLeft: '4px'
         }}>
@@ -115,7 +115,7 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
         </div>
 
         {users.length === 0 ? (
-          <div style={{ padding: '16px 8px', textAlign: 'center', color: '#6c7086', fontSize: '0.8rem' }}>
+          <div style={{ padding: '16px 8px', textAlign: 'center', color: 'var(--subtext0)', fontSize: '0.8rem' }}>
             No active members online
           </div>
         ) : (
@@ -134,13 +134,13 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
                   padding: '8px 10px',
                   borderRadius: '6px',
                   marginBottom: '4px',
-                  backgroundColor: isSelf ? '#1e1e2e' : 'transparent',
+                  backgroundColor: isSelf ? 'var(--surface0)' : 'transparent',
                   cursor: 'pointer',
                   transition: 'background-color 0.15s ease',
-                  border: isSelf ? '1px solid #313244' : '1px solid transparent'
+                  border: isSelf ? '1px solid var(--border)' : '1px solid transparent'
                 }}
                 onMouseEnter={(e) => {
-                  if (!isSelf) e.currentTarget.style.backgroundColor = '#181825';
+                  if (!isSelf) e.currentTarget.style.backgroundColor = 'var(--mantle)';
                 }}
                 onMouseLeave={(e) => {
                   if (!isSelf) e.currentTarget.style.backgroundColor = 'transparent';
@@ -152,7 +152,7 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
                     width: '32px',
                     height: '32px',
                     borderRadius: '50%',
-                    backgroundColor: user.color || '#89b4fa',
+                    backgroundColor: user.color || 'var(--blue)',
                     color: '#11111b',
                     display: 'flex',
                     alignItems: 'center',
@@ -172,7 +172,7 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
                     height: '10px',
                     borderRadius: '50%',
                     backgroundColor: statusColor,
-                    border: '2px solid #11111b'
+                    border: '2px solid var(--crust)'
                   }} title={getStatusLabel(user.status)} />
                 </div>
 
@@ -181,7 +181,7 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{
                       fontWeight: 600,
-                      color: isSelf ? '#89b4fa' : '#cdd6f4',
+                      color: isSelf ? 'var(--blue)' : 'var(--text)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -194,8 +194,8 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
                         fontSize: '0.65rem',
                         padding: '1px 5px',
                         borderRadius: '4px',
-                        backgroundColor: '#313244',
-                        color: '#a6adc8',
+                        backgroundColor: 'var(--surface0)',
+                        color: 'var(--subtext0)',
                         marginLeft: '4px'
                       }}>
                         {user.role}
@@ -209,7 +209,7 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({ summary, curre
                     alignItems: 'center',
                     gap: '4px',
                     fontSize: '0.72rem',
-                    color: user.activity === 'EDITING' ? '#a6e3a1' : '#89dceb',
+                    color: user.activity === 'EDITING' ? 'var(--green)' : 'var(--sky)',
                     marginTop: '2px'
                   }}>
                     {user.activity === 'EDITING' ? (

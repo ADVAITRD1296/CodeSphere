@@ -81,12 +81,12 @@ const MessageBubble = memo(({
             borderRadius: isSelf
               ? '16px 16px 4px 16px'
               : '16px 16px 16px 4px',
-            backgroundColor: isSelf ? '#89b4fa' : '#313244',
-            color: isSelf ? '#1e1e2e' : '#cdd6f4',
+            backgroundColor: isSelf ? 'var(--blue)' : 'var(--surface0)',
+            color: isSelf ? '#11111b' : 'var(--text)',
             fontSize: '0.85rem',
             lineHeight: '1.5',
             wordBreak: 'break-word',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
           }}
         >
           {msg.message}
@@ -169,20 +169,20 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         top: 0,
         bottom: 0,
         width: '320px',
-        backgroundColor: '#1e1e2e',
-        borderLeft: '1px solid rgba(137,180,250,0.12)',
+        backgroundColor: 'var(--mantle)',
+        borderLeft: '1px solid var(--border)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 150,
-        boxShadow: '-8px 0 32px rgba(0,0,0,0.4)',
+        boxShadow: 'var(--shadow-lg)',
       }}
     >
       {/* Header */}
       <div
         style={{
           height: '54px',
-          backgroundColor: '#181825',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          backgroundColor: 'var(--crust)',
+          borderBottom: '1px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -191,7 +191,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Hash size={16} style={{ color: '#89b4fa' }} />
+          <Hash size={16} style={{ color: 'var(--blue)' }} />
           <div>
             <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Room Chat</div>
             <div style={{ fontSize: '0.7rem', color: '#585b70', display: 'flex', alignItems: 'center', gap: '4px' }}>

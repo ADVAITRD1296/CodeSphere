@@ -199,7 +199,7 @@ export const SnapshotPanel: React.FC<SnapshotPanelProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: 'rgba(0,0,0,0.5)',
         backdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'stretch',
@@ -212,18 +212,18 @@ export const SnapshotPanel: React.FC<SnapshotPanelProps> = ({
         style={{
           width: 'min(95vw, 1100px)',
           height: '100%',
-          backgroundColor: '#1e1e2e',
+          backgroundColor: 'var(--base)',
           display: 'flex',
           flexDirection: 'column',
-          borderLeft: '1px solid rgba(137,180,250,0.15)',
+          borderLeft: '1px solid var(--border)',
         }}
       >
         {/* Panel Header */}
         <div
           style={{
             height: '54px',
-            backgroundColor: '#181825',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            backgroundColor: 'var(--crust)',
+            borderBottom: '1px solid var(--border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -232,10 +232,10 @@ export const SnapshotPanel: React.FC<SnapshotPanelProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <GitBranch size={18} style={{ color: '#cba6f7' }} />
+            <GitBranch size={18} style={{ color: 'var(--mauve)' }} />
             <div>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Version History</div>
-              <div style={{ fontSize: '0.75rem', color: '#585b70' }}>{fileName}</div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>Version History</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--subtext0)' }}>{fileName}</div>
             </div>
           </div>
 

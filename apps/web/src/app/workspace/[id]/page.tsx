@@ -335,11 +335,11 @@ export default function WorkspaceIDEPage() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--crust)', color: 'var(--text)', overflow: 'hidden' }}>
       {/* IDE Top Header */}
       <header className="ide-header">
-        {/* Left: Nav + Workspace Name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--overlay1)', fontSize: '0.82rem', transition: 'color var(--ease-fast)' }}
+        {/* 1. Left: Nav + Workspace Name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--subtext0)', fontSize: '0.82rem', transition: 'color var(--ease-fast)' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--overlay1)')}>
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--subtext0)')}>
             <ArrowLeft size={15} /> Dashboard
           </Link>
           <span className="divider-v" style={{ height: '16px' }} />
@@ -352,111 +352,112 @@ export default function WorkspaceIDEPage() {
           </div>
         </div>
 
-        {/* Right: Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {/* WebRTC Voice Call Control */}
-          <VoiceCallControl
-            isInVoice={isInVoice}
-            isMuted={isMuted}
-            isSpeaking={isSpeaking}
-            voicePeers={voicePeers}
-            permissionError={voicePermissionError}
-            onJoin={joinVoiceCall}
-            onLeave={leaveVoiceCall}
-            onToggleMute={toggleMute}
-            currentUsername={user?.username}
-          />
+        {/* 2. Right: Grouped Action Toolbar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Group A: Communication (Voice & Video) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <VoiceCallControl
+              isInVoice={isInVoice}
+              isMuted={isMuted}
+              isSpeaking={isSpeaking}
+              voicePeers={voicePeers}
+              permissionError={voicePermissionError}
+              onJoin={joinVoiceCall}
+              onLeave={leaveVoiceCall}
+              onToggleMute={toggleMute}
+              currentUsername={user?.username}
+            />
 
-          {/* Video Call Button */}
-          <button
-            onClick={() => setShowVideoModal(true)}
-            className={`ide-pill-btn${isInVideo ? ' video-active' : ''}`}
-            title="Open Video Conference"
-          >
-            <Video size={13} /> {isInVideo ? 'In Meeting' : 'Video'}
-          </button>
-
-          {/* Whiteboard Button */}
-          <button
-            onClick={() => setShowWhiteboardModal(true)}
-            className={`ide-pill-btn${showWhiteboardModal ? ' active' : ''}`}
-            title="Open Collaborative Whiteboard"
-          >
-            <Palette size={13} color="var(--mauve)" /> Whiteboard
-          </button>
-
-          {/* Theme Toggle (Dark / Light Mode) */}
-          <ThemeToggle />
-
-          <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
-
-
-          {/* Member Presence Avatars */}
-          <UserAvatars
-            onlineUsers={onlineUsers}
-            currentUserId={user?.id}
-            onTogglePresenceSidebar={() => setShowPresenceSidebar(v => !v)}
-          />
-
-          {/* Collab Panel Toggle Button */}
-          <button
-            onClick={() => setShowRightCollabPanel(v => !v)}
-            className={`ide-pill-btn${showRightCollabPanel ? ' active' : ''}`}
-            title="Toggle Right Collaboration Panel"
-          >
-            <Users size={13} /> Collab ({presenceSummary.totalOnline})
-          </button>
-
-          <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
-
-          {/* Quick Run */}
-          {!isReadOnly && activeFile && (
             <button
-              onClick={() => handleRunCode(activeFile.language, activeFile.content)}
-              disabled={isRunning}
-              className="ide-pill-btn run-btn"
-              title="Run Code"
+              onClick={() => setShowVideoModal(true)}
+              className={`ide-pill-btn${isInVideo ? ' video-active' : ''}`}
+              title="Open Video Meeting"
             >
-              <Play size={12} fill="currentColor" />
-              {isRunning ? 'Running…' : 'Run'}
+              <Video size={13} /> {isInVideo ? 'In Meeting' : 'Video'}
             </button>
-          )}
+          </div>
 
-          {/* History */}
-          {activeFile && (
-            <button onClick={() => setShowSnapshot(true)} className="ide-icon-btn" title="Version History">
-              <History size={14} />
+          <span className="divider-v" style={{ height: '18px' }} />
+
+          {/* Group B: Collaboration (Presence & Panel) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <UserAvatars
+              onlineUsers={onlineUsers}
+              currentUserId={user?.id}
+              onTogglePresenceSidebar={() => setShowPresenceSidebar(v => !v)}
+            />
+
+            <button
+              onClick={() => setShowRightCollabPanel(v => !v)}
+              className={`ide-pill-btn${showRightCollabPanel ? ' active' : ''}`}
+              title="Toggle Collaboration Panel"
+            >
+              <Users size={13} /> Collab ({presenceSummary.totalOnline})
             </button>
-          )}
+          </div>
 
-          {/* Terminal Toggle */}
-          <button
-            onClick={() => setTerminalCollapsed(v => !v)}
-            className={`ide-icon-btn${!terminalCollapsed ? ' active' : ''}`}
-            title="Toggle Terminal"
-          >
-            <Terminal size={14} />
-          </button>
+          <span className="divider-v" style={{ height: '18px' }} />
 
-          {/* Settings (Owner only) */}
-          {userRole === 'OWNER' && (
-            <button onClick={() => setShowSettings(true)} className="ide-icon-btn" title="Workspace Settings">
-              <Settings size={14} />
+          {/* Group C: Workspace Tools & Execution */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button
+              onClick={() => setShowWhiteboardModal(true)}
+              className={`ide-pill-btn${showWhiteboardModal ? ' active' : ''}`}
+              title="Open Collaborative Whiteboard"
+            >
+              <Palette size={13} color="var(--mauve)" /> Whiteboard
             </button>
-          )}
 
-          <span className="divider-v" style={{ height: '20px', margin: '0 2px' }} />
+            {activeFile && (
+              <button onClick={() => setShowSnapshot(true)} className="ide-icon-btn" title="Version History">
+                <History size={14} />
+              </button>
+            )}
 
-          {userRole === 'OWNER' && (
-            <button onClick={() => setShowInviteModal(true)} className="btn-secondary" style={{ padding: '5px 10px', fontSize: '0.78rem', gap: '5px' }}>
-              <UserPlus size={13} /> Invite
+            <button
+              onClick={() => setTerminalCollapsed(v => !v)}
+              className={`ide-icon-btn${!terminalCollapsed ? ' active' : ''}`}
+              title="Toggle Terminal"
+            >
+              <Terminal size={14} />
             </button>
-          )}
 
-          <button onClick={copyRoomLink} className="btn-secondary" style={{ padding: '5px 10px', fontSize: '0.78rem', gap: '5px' }}>
-            {copiedLink ? <Check size={13} color="var(--green)" /> : <Copy size={13} />}
-            {copiedLink ? 'Copied!' : 'Share'}
-          </button>
+            {!isReadOnly && activeFile && (
+              <button
+                onClick={() => handleRunCode(activeFile.language, activeFile.content)}
+                disabled={isRunning}
+                className="ide-pill-btn run-btn"
+                title="Execute Code"
+              >
+                <Play size={12} fill="currentColor" />
+                {isRunning ? 'Running…' : 'Run'}
+              </button>
+            )}
+          </div>
+
+          <span className="divider-v" style={{ height: '18px' }} />
+
+          {/* Group D: Utilities & Sharing */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <ThemeToggle />
+
+            {userRole === 'OWNER' && (
+              <button onClick={() => setShowSettings(true)} className="ide-icon-btn" title="Workspace Settings">
+                <Settings size={14} />
+              </button>
+            )}
+
+            {userRole === 'OWNER' && (
+              <button onClick={() => setShowInviteModal(true)} className="btn-secondary" style={{ padding: '5px 10px', fontSize: '0.78rem', gap: '5px' }}>
+                <UserPlus size={13} /> Invite
+              </button>
+            )}
+
+            <button onClick={copyRoomLink} className="btn-secondary" style={{ padding: '5px 10px', fontSize: '0.78rem', gap: '5px' }}>
+              {copiedLink ? <Check size={13} color="var(--green)" /> : <Copy size={13} />}
+              {copiedLink ? 'Copied!' : 'Share'}
+            </button>
+          </div>
         </div>
       </header>
 

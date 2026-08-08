@@ -65,10 +65,10 @@ const VideoCard: React.FC<{
         position: 'relative',
         width: '100%',
         height: '100%',
-        backgroundColor: '#181825',
+        backgroundColor: 'var(--mantle)',
         borderRadius: '12px',
         overflow: 'hidden',
-        border: isPinned ? '2px solid #89b4fa' : '1px solid #313244',
+        border: isPinned ? '2px solid var(--blue)' : '1px solid var(--border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -94,7 +94,7 @@ const VideoCard: React.FC<{
           flexDirection: 'column',
           alignItems: 'center',
           gap: '8px',
-          color: '#cdd6f4'
+          color: 'var(--text)'
         }}>
           <div style={{
             width: '56px',
