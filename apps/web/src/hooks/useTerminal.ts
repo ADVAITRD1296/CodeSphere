@@ -74,7 +74,7 @@ export function useTerminal(socket: Socket | null) {
    */
   const sendInput = useCallback(
     (input: string) => {
-      const execId = currentExecutionIdRef.current;
+      const execId = currentExecutionIdRef.current || session?.executionId;
       if (!socket || !execId || !isRunningRef.current) return;
 
       // Echo the typed input in the terminal so it feels like a real terminal
@@ -83,33 +83,31 @@ export function useTerminal(socket: Socket | null) {
         {
           id: `stdin-${Date.now()}`,
           type: 'stdin',
-          content: `\x1b[36m${input}\x1b[0m`,
+          content: `\x1b[36m❯ ${input}\x1b[0m`,
           timestamp: Date.now(),
         },
       ]);
 
       socket.emit(SOCKET_EVENTS.EXECUTION.INPUT, { executionId: execId, input });
     },
-    [socket]
+    [socket, session?.executionId]
   );
 
   /**
    * Send a SIGKILL to the currently running process.
    */
   const killExecution = useCallback(() => {
-    const execId = currentExecutionIdRef.current;
+    const execId = currentExecutionIdRef.current || session?.executionId;
     if (!socket || !execId || !isRunningRef.current) return;
     socket.emit(SOCKET_EVENTS.EXECUTION.KILL, { executionId: execId });
-  }, [socket]);
+  }, [socket, session?.executionId]);
 
   useEffect(() => {
     if (!socket) return;
 
     const handleStdout = ({ executionId, chunk }: { executionId: string; chunk: string }) => {
       // Track the current running executionId for stdin / kill
-      if (currentExecutionIdRef.current !== executionId) {
-        currentExecutionIdRef.current = executionId;
-      }
+      currentExecutionIdRef.current = executionId;
 
       // Split multi-line chunks but preserve ANSI codes
       const parts = chunk.split('\n');
@@ -127,12 +125,12 @@ export function useTerminal(socket: Socket | null) {
         ]);
       });
 
-      if (!session) {
-        setSession({ executionId, startedAt: Date.now(), isRunning: true });
-      }
+      setSession((prev) => prev || { executionId, startedAt: Date.now(), isRunning: true });
     };
 
     const handleStderr = ({ executionId, chunk }: { executionId: string; chunk: string }) => {
+      currentExecutionIdRef.current = executionId;
+
       const parts = chunk.split('\n');
       parts.forEach((part, idx) => {
         if (idx === parts.length - 1 && part === '') return;
@@ -146,6 +144,8 @@ export function useTerminal(socket: Socket | null) {
           },
         ]);
       });
+
+      setSession((prev) => prev || { executionId, startedAt: Date.now(), isRunning: true });
     };
 
     const handleComplete = ({

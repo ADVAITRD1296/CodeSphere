@@ -474,6 +474,7 @@ export const TerminalPanel = memo(({
       {!isCollapsed && (
         <div
           ref={scrollRef}
+          onClick={() => isRunning && inputRef.current?.focus()}
           style={{
             flex: 1,
             overflowY: 'auto',
@@ -481,6 +482,7 @@ export const TerminalPanel = memo(({
             userSelect: 'text',
             scrollbarWidth: 'thin',
             scrollbarColor: 'var(--surface0) transparent',
+            cursor: isRunning ? 'text' : 'default',
           }}
         >
           {lines.length === 0 ? (
@@ -505,25 +507,49 @@ export const TerminalPanel = memo(({
               {lines.map((line) => (
                 <TerminalLineItem key={line.id} line={line} />
               ))}
-              {session?.isRunning && (
-                <div
+              {isRunning && (
+                <form
+                  onSubmit={handleSendInput}
                   style={{
-                    display: 'inline-block',
-                    width: '8px',
-                    height: '14px',
-                    backgroundColor: 'var(--blue)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
                     marginTop: '2px',
-                    animation: 'blink-cursor 1s step-end infinite',
-                    verticalAlign: 'middle',
                   }}
-                />
+                >
+                  <span style={{ color: 'var(--sky)', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', fontWeight: 700 }}>
+                    ❯
+                  </span>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={stdinValue}
+                    onChange={(e) => setStdinValue(e.target.value)}
+                    placeholder="Type input and press Enter…"
+                    autoFocus
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    style={{
+                      flex: 1,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: 'var(--text)',
+                      fontSize: '12px',
+                      fontFamily: '"JetBrains Mono", monospace',
+                      outline: 'none',
+                      padding: 0,
+                    }}
+                  />
+                </form>
               )}
             </div>
           )}
         </div>
       )}
 
-      {/* ─── Interactive Stdin Input Bar ─────────────────────────────────── */}
+      {/* ─── Interactive Stdin Input Bar (Bottom Dock) ──────────────────── */}
       {!isCollapsed && isRunning && (
         <form
           onSubmit={handleSendInput}
@@ -554,7 +580,6 @@ export const TerminalPanel = memo(({
 
           {/* Input field */}
           <input
-            ref={inputRef}
             type="text"
             value={stdinValue}
             onChange={(e) => setStdinValue(e.target.value)}
@@ -589,7 +614,7 @@ export const TerminalPanel = memo(({
               gap: '5px',
               padding: '4px 10px',
               backgroundColor: 'rgba(137, 220, 235, 0.12)',
-              color: '#89dceb',
+              color: 'var(--sky)',
               border: '1px solid rgba(137, 220, 235, 0.25)',
               borderRadius: '4px',
               fontSize: '11px',

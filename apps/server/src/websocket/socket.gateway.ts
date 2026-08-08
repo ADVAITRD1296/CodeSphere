@@ -461,7 +461,7 @@ export function setupSocketGateway(server: http.Server) {
         case 'PYTHON':
           fileName = 'script.py';
           dockerImage = 'python:3.11-alpine';
-          runCmd = ['python3', `/code/${fileName}`];
+          runCmd = ['python3', '-u', `/code/${fileName}`];
           break;
         case 'CPP':
           fileName = 'main.cpp';
@@ -490,53 +490,13 @@ export function setupSocketGateway(server: http.Server) {
       // Helper: clean up temp directory
       const cleanup = () => fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
 
-      const runProcess = (cmd: string, args: string[], label: string) => {
-        return new Promise<number>((resolve) => {
-          socket.emit(SOCKET_EVENTS.EXECUTION.STDOUT, {
-            executionId,
-            chunk: `\x1b[36m▶ Running ${language} via ${label}…\x1b[0m\n`
-          });
-
-          const proc = spawn(cmd, args, { shell: cmd === 'sh', stdio: ['pipe','pipe','pipe'] });
-          // Store for stdin forwarding
-          runningProcesses.set(executionId, proc);
-          const timer = setTimeout(() => { isTimedOut = true; proc.kill('SIGKILL'); }, 5000);
-
-          proc.stdout.on('data', (d: Buffer) => {
-            socket.emit(SOCKET_EVENTS.EXECUTION.STDOUT, { executionId, chunk: d.toString() });
-          });
-
-          proc.stderr.on('data', (d: Buffer) => {
-            socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, { executionId, chunk: d.toString() });
-          });
-
-          proc.on('error', (err: Error) => {
-            clearTimeout(timer);
-            socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
-              executionId,
-              chunk: `\x1b[31m[Error] Failed to start ${label}: ${err.message}\x1b[0m\n`
-            });
-            socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId, exitCode: 1, durationMs: Date.now() - startTime });
-            resolve(1);
-          });
-
-          proc.on('close', (exitCode) => {
-            clearTimeout(timer);
-            runningProcesses.delete(executionId);
-            const durationMs = Date.now() - startTime;
-            socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId, exitCode: exitCode || 0, durationMs });
-            resolve(exitCode || 0);
-          });
-        });
-      };
-
       // Helper: run code on host when Docker is unavailable
       const runHostExecution = async (): Promise<void> => {
         const spawnAndStream = (cmd: string, args: string[], label: string, isFinalStep = true) => {
           return new Promise<number>((resolve) => {
             const proc = spawn(cmd, args, { shell: cmd === 'sh', stdio: ['pipe', 'pipe', 'pipe'] });
             runningProcesses.set(executionId, proc);
-            const timer = setTimeout(() => { isTimedOut = true; proc.kill('SIGKILL'); }, 5000);
+            const timer = setTimeout(() => { isTimedOut = true; proc.kill('SIGKILL'); }, 10000);
 
             proc.stdout.on('data', (d: Buffer) => {
               socket.emit(SOCKET_EVENTS.EXECUTION.STDOUT, { executionId, chunk: d.toString() });
@@ -546,6 +506,7 @@ export function setupSocketGateway(server: http.Server) {
             });
             proc.on('error', (err: Error) => {
               clearTimeout(timer);
+              runningProcesses.delete(executionId);
               socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
                 executionId,
                 chunk: `\x1b[31m[Error] Failed to start ${label}: ${err.message}\x1b[0m\n`
@@ -575,7 +536,7 @@ export function setupSocketGateway(server: http.Server) {
             await spawnAndStream('npx', ['tsx', filePath], 'host runtime', true);
             break;
           case 'PYTHON':
-            await spawnAndStream('python3', [filePath], 'host runtime', true);
+            await spawnAndStream('python3', ['-u', filePath], 'host runtime', true);
             break;
           case 'CPP': {
             const compileCode = await spawnAndStream('g++', [filePath, '-o', `${tempDir}/app`], 'host compile', false);
@@ -590,27 +551,10 @@ export function setupSocketGateway(server: http.Server) {
         }
       };
 
-      // Listen for kill signal from client to terminate execution
-      socket.on(SOCKET_EVENTS.EXECUTION.KILL, ({ executionId: killId }: { executionId: string }) => {
-        if (runningProcesses.has(killId)) {
-          const proc = runningProcesses.get(killId)!;
-          proc.kill('SIGKILL');
-          runningProcesses.delete(killId);
-          socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
-            executionId: killId,
-            chunk: '\x1b[33m[Info] Execution killed by client\n'
-          });
-          socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId: killId, exitCode: 137, durationMs: Date.now() - startTime });
-        }
-      });
-
-      socket.on(SOCKET_EVENTS.EXECUTION.INPUT, ({ executionId: inputId, input }: { executionId: string; input: string }) => {
-        if (runningProcesses.has(inputId)) {
-          const proc = runningProcesses.get(inputId)!;
-          if (proc.stdin) {
-            proc.stdin.write(input.endsWith('\n') ? input : input + '\n');
-          }
-        }
+      // Emit initial stdout start line with executionId immediately so frontend tracks process
+      socket.emit(SOCKET_EVENTS.EXECUTION.STDOUT, {
+        executionId,
+        chunk: `\x1b[36m▶ Running ${language}…\x1b[0m\n`
       });
 
       // Determine if Docker is usable before attempting Docker execution
@@ -625,15 +569,15 @@ export function setupSocketGateway(server: http.Server) {
 
       if (!dockerAvailable) {
         // Docker not available – run directly on host
-
         await runHostExecution();
         await cleanup();
         return;
       }
 
       // First, try Docker execution (Docker is available)
+      // Note: -i (interactive) is required for STDIN forwarding
       const dockerArgs = [
-        'run', '--rm',
+        'run', '--rm', '-i',
         '--network', 'none',
         '--memory', '128m',
         '--cpus', '0.5',
@@ -643,10 +587,9 @@ export function setupSocketGateway(server: http.Server) {
         ...runCmd
       ];
 
-
-
-      const dockerProc = spawn('docker', dockerArgs);
-      const dockerTimer = setTimeout(() => { isTimedOut = true; dockerProc.kill('SIGKILL'); }, 5000);
+      const dockerProc = spawn('docker', dockerArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
+      runningProcesses.set(executionId, dockerProc);
+      const dockerTimer = setTimeout(() => { isTimedOut = true; dockerProc.kill('SIGKILL'); }, 10000);
 
       dockerProc.stdout.on('data', (data: Buffer) => {
         socket.emit(SOCKET_EVENTS.EXECUTION.STDOUT, { executionId, chunk: data.toString() });
@@ -660,23 +603,19 @@ export function setupSocketGateway(server: http.Server) {
 
       dockerProc.on('error', async (err) => {
         dockerFailed = true;
-        // Docker not available — fall back to host execution
-        // IMPORTANT: Do NOT delete tempDir here — the fallback process needs the files!
         clearTimeout(dockerTimer);
+        runningProcesses.delete(executionId);
         isTimedOut = false;
-
-
-
         await runHostExecution();
       });
 
       dockerProc.on('close', async (exitCode) => {
         clearTimeout(dockerTimer);
+        runningProcesses.delete(executionId);
         const durationMs = Date.now() - startTime;
         const finalExit = isTimedOut ? 124 : (exitCode ?? 0);
 
         if (dockerFailed) {
-          // Already handled by the 'error' event which triggered runHostExecution
           await cleanup();
           return;
         }
@@ -684,14 +623,42 @@ export function setupSocketGateway(server: http.Server) {
         if (isTimedOut) {
           socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
             executionId,
-            chunk: '\x1b[31m[Timeout] Execution exceeded 5 seconds\x1b[0m\n'
+            chunk: '\x1b[31m[Timeout] Execution exceeded 10 seconds\x1b[0m\n'
           });
         }
 
-        // Docker ran successfully (even if program had errors). Report result directly.
-        socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId, exitCode: finalExit, durationMs });
+        socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, {
+          executionId,
+          exitCode: finalExit,
+          durationMs,
+        });
+
         await cleanup();
       });
+    });
+
+    // ─── STDIN Input Handler (Top-level socket scope) ───────────────────
+    socket.on(SOCKET_EVENTS.EXECUTION.INPUT, ({ executionId: inputId, input }: { executionId: string; input: string }) => {
+      if (runningProcesses.has(inputId)) {
+        const proc = runningProcesses.get(inputId)!;
+        if (proc.stdin && !proc.stdin.destroyed) {
+          proc.stdin.write(input.endsWith('\n') ? input : input + '\n');
+        }
+      }
+    });
+
+    // ─── SIGKILL Execution Handler (Top-level socket scope) ─────────────
+    socket.on(SOCKET_EVENTS.EXECUTION.KILL, ({ executionId: killId }: { executionId: string }) => {
+      if (runningProcesses.has(killId)) {
+        const proc = runningProcesses.get(killId)!;
+        proc.kill('SIGKILL');
+        runningProcesses.delete(killId);
+        socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
+          executionId: killId,
+          chunk: '\x1b[33m[Info] Execution killed by user\n\x1b[0m'
+        });
+        socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, { executionId: killId, exitCode: 137, durationMs: 0 });
+      }
     });
 
     socket.on('disconnect', () => {
