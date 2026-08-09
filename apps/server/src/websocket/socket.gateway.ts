@@ -485,10 +485,38 @@ export function setupSocketGateway(server: http.Server) {
       }
 
       const startTime = Date.now();
-      let isTimedOut = false;
+      // 5-minute absolute ceiling for completely runaway processes (infinite loops, etc.)
+      // Does NOT apply while waiting for stdin – see debounce logic below.
+      const ABSOLUTE_TIMEOUT_MS = 5 * 60 * 1000;
 
-      // Helper: clean up temp directory
-      const cleanup = () => fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      // ── Shared debounce helpers ────────────────────────────────────────
+      // After stdout/stderr goes quiet for STDIN_DEBOUNCE_MS we emit WAITING_INPUT.
+      // This is reset on every new output chunk AND on every stdin write.
+      const STDIN_DEBOUNCE_MS = 300;
+      let stdinDebounce: ReturnType<typeof setTimeout> | null = null;
+      let absoluteTimer: ReturnType<typeof setTimeout> | null = null;
+      let isWaitingForStdin = false;
+
+      const scheduleWaitingInput = () => {
+        if (stdinDebounce) clearTimeout(stdinDebounce);
+        isWaitingForStdin = false;
+        stdinDebounce = setTimeout(() => {
+          isWaitingForStdin = true;
+          socket.emit(SOCKET_EVENTS.EXECUTION.WAITING_INPUT, { executionId });
+        }, STDIN_DEBOUNCE_MS);
+      };
+
+      const cancelWaitingInput = () => {
+        if (stdinDebounce) { clearTimeout(stdinDebounce); stdinDebounce = null; }
+        isWaitingForStdin = false;
+      };
+
+      // Helper: clean up temp directory and all timers
+      const cleanup = () => {
+        cancelWaitingInput();
+        if (absoluteTimer) { clearTimeout(absoluteTimer); absoluteTimer = null; }
+        return fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      };
 
       // Helper: run code on host when Docker is unavailable
       const runHostExecution = async (): Promise<void> => {
@@ -496,16 +524,30 @@ export function setupSocketGateway(server: http.Server) {
           return new Promise<number>((resolve) => {
             const proc = spawn(cmd, args, { shell: cmd === 'sh', stdio: ['pipe', 'pipe', 'pipe'] });
             runningProcesses.set(executionId, proc);
-            const timer = setTimeout(() => { isTimedOut = true; proc.kill('SIGKILL'); }, 10000);
+
+            // Absolute ceiling – kills only if process runs without producing output for 5 mins
+            absoluteTimer = setTimeout(() => {
+              proc.kill('SIGKILL');
+              socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
+                executionId,
+                chunk: '\x1b[31m[Timeout] Process exceeded 5-minute limit\x1b[0m\n'
+              });
+            }, ABSOLUTE_TIMEOUT_MS);
 
             proc.stdout.on('data', (d: Buffer) => {
+              cancelWaitingInput();
               socket.emit(SOCKET_EVENTS.EXECUTION.STDOUT, { executionId, chunk: d.toString() });
+              // Schedule WAITING_INPUT after output quiets down
+              scheduleWaitingInput();
             });
             proc.stderr.on('data', (d: Buffer) => {
+              cancelWaitingInput();
               socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, { executionId, chunk: d.toString() });
+              scheduleWaitingInput();
             });
             proc.on('error', (err: Error) => {
-              clearTimeout(timer);
+              cancelWaitingInput();
+              if (absoluteTimer) { clearTimeout(absoluteTimer); absoluteTimer = null; }
               runningProcesses.delete(executionId);
               socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
                 executionId,
@@ -517,7 +559,8 @@ export function setupSocketGateway(server: http.Server) {
               resolve(1);
             });
             proc.on('close', (exitCode) => {
-              clearTimeout(timer);
+              cancelWaitingInput();
+              if (absoluteTimer) { clearTimeout(absoluteTimer); absoluteTimer = null; }
               runningProcesses.delete(executionId);
               const durationMs = Date.now() - startTime;
               if (isFinalStep || exitCode !== 0) {
@@ -589,42 +632,48 @@ export function setupSocketGateway(server: http.Server) {
 
       const dockerProc = spawn('docker', dockerArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
       runningProcesses.set(executionId, dockerProc);
-      const dockerTimer = setTimeout(() => { isTimedOut = true; dockerProc.kill('SIGKILL'); }, 10000);
+
+      // Absolute ceiling for Docker containers (same 5-min rule, no hard short timeout)
+      absoluteTimer = setTimeout(() => {
+        dockerProc.kill('SIGKILL');
+        socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
+          executionId,
+          chunk: '\x1b[31m[Timeout] Process exceeded 5-minute limit\x1b[0m\n'
+        });
+      }, ABSOLUTE_TIMEOUT_MS);
 
       dockerProc.stdout.on('data', (data: Buffer) => {
+        cancelWaitingInput();
         socket.emit(SOCKET_EVENTS.EXECUTION.STDOUT, { executionId, chunk: data.toString() });
+        scheduleWaitingInput();
       });
 
       dockerProc.stderr.on('data', (data: Buffer) => {
+        cancelWaitingInput();
         socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, { executionId, chunk: data.toString() });
+        scheduleWaitingInput();
       });
 
       let dockerFailed = false;
 
       dockerProc.on('error', async (err) => {
         dockerFailed = true;
-        clearTimeout(dockerTimer);
+        cancelWaitingInput();
+        if (absoluteTimer) { clearTimeout(absoluteTimer); absoluteTimer = null; }
         runningProcesses.delete(executionId);
-        isTimedOut = false;
         await runHostExecution();
       });
 
       dockerProc.on('close', async (exitCode) => {
-        clearTimeout(dockerTimer);
+        cancelWaitingInput();
+        if (absoluteTimer) { clearTimeout(absoluteTimer); absoluteTimer = null; }
         runningProcesses.delete(executionId);
         const durationMs = Date.now() - startTime;
-        const finalExit = isTimedOut ? 124 : (exitCode ?? 0);
+        const finalExit = exitCode ?? 0;
 
         if (dockerFailed) {
           await cleanup();
           return;
-        }
-
-        if (isTimedOut) {
-          socket.emit(SOCKET_EVENTS.EXECUTION.STDERR, {
-            executionId,
-            chunk: '\x1b[31m[Timeout] Execution exceeded 10 seconds\x1b[0m\n'
-          });
         }
 
         socket.emit(SOCKET_EVENTS.EXECUTION.COMPLETE, {

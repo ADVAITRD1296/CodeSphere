@@ -21,6 +21,8 @@ export function useTerminal(socket: Socket | null) {
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [session, setSession] = useState<TerminalSession | null>(null);
   const [isRunningState, setIsRunningState] = useState(false);
+  // True only when the backend signals the process is blocked on stdin
+  const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const isRunningRef = useRef(false);
   const currentExecutionIdRef = useRef<string | null>(null);
 
@@ -39,6 +41,7 @@ export function useTerminal(socket: Socket | null) {
   const clearTerminal = useCallback(() => {
     setLines([]);
     setSession(null);
+    setIsWaitingForInput(false);
     currentExecutionIdRef.current = null;
   }, []);
 
@@ -52,13 +55,14 @@ export function useTerminal(socket: Socket | null) {
       clearTerminal();
       isRunningRef.current = true;
       setIsRunningState(true);
+      setIsWaitingForInput(false);
 
       const timestamp = new Date().toLocaleTimeString();
       setLines([
         {
           id: 'system-start',
           type: 'system',
-          content: `\x1b[90m[${timestamp}] Executing ${language} code…\x1b[0m`,
+          content: `\x1b[90m[${timestamp}] Executing ${language} code\u2026\x1b[0m`,
           timestamp: Date.now(),
         },
       ]);
@@ -70,12 +74,15 @@ export function useTerminal(socket: Socket | null) {
 
   /**
    * Send a line of stdin input to the currently running process.
-   * Also echoes the input visually in the terminal output.
+   * Also echoes the input visually and clears the waiting-for-input state.
    */
   const sendInput = useCallback(
     (input: string) => {
       const execId = currentExecutionIdRef.current || session?.executionId;
       if (!socket || !execId || !isRunningRef.current) return;
+
+      // Clear the waiting state immediately – process is now consuming our input
+      setIsWaitingForInput(false);
 
       // Echo the typed input in the terminal so it feels like a real terminal
       setLines((prev) => [
@@ -83,7 +90,7 @@ export function useTerminal(socket: Socket | null) {
         {
           id: `stdin-${Date.now()}`,
           type: 'stdin',
-          content: `\x1b[36m❯ ${input}\x1b[0m`,
+          content: `\x1b[36m\u276f ${input}\x1b[0m`,
           timestamp: Date.now(),
         },
       ]);
@@ -99,6 +106,7 @@ export function useTerminal(socket: Socket | null) {
   const killExecution = useCallback(() => {
     const execId = currentExecutionIdRef.current || session?.executionId;
     if (!socket || !execId || !isRunningRef.current) return;
+    setIsWaitingForInput(false);
     socket.emit(SOCKET_EVENTS.EXECUTION.KILL, { executionId: execId });
   }, [socket, session?.executionId]);
 
@@ -106,6 +114,9 @@ export function useTerminal(socket: Socket | null) {
     if (!socket) return;
 
     const handleStdout = ({ executionId, chunk }: { executionId: string; chunk: string }) => {
+      // New output means process is not waiting for input right now
+      setIsWaitingForInput(false);
+
       // Track the current running executionId for stdin / kill
       currentExecutionIdRef.current = executionId;
 
@@ -129,6 +140,7 @@ export function useTerminal(socket: Socket | null) {
     };
 
     const handleStderr = ({ executionId, chunk }: { executionId: string; chunk: string }) => {
+      setIsWaitingForInput(false);
       currentExecutionIdRef.current = executionId;
 
       const parts = chunk.split('\n');
@@ -148,6 +160,13 @@ export function useTerminal(socket: Socket | null) {
       setSession((prev) => prev || { executionId, startedAt: Date.now(), isRunning: true });
     };
 
+    const handleWaitingInput = ({ executionId }: { executionId: string }) => {
+      // Backend confirmed the process is blocked on stdin — show the prompt
+      if (currentExecutionIdRef.current === executionId && isRunningRef.current) {
+        setIsWaitingForInput(true);
+      }
+    };
+
     const handleComplete = ({
       executionId,
       exitCode,
@@ -159,13 +178,14 @@ export function useTerminal(socket: Socket | null) {
     }) => {
       isRunningRef.current = false;
       setIsRunningState(false);
+      setIsWaitingForInput(false);
       currentExecutionIdRef.current = null;
       setSession((prev) =>
         prev ? { ...prev, isRunning: false, exitCode, durationMs } : null
       );
 
       const statusColor = exitCode === 0 ? '\x1b[32m' : '\x1b[31m';
-      const statusText = exitCode === 0 ? '✓ Exited successfully' : `✗ Exited with code ${exitCode}`;
+      const statusText = exitCode === 0 ? '\u2713 Exited successfully' : `\u2717 Exited with code ${exitCode}`;
       setLines((prev) => [
         ...prev,
         {
@@ -180,11 +200,13 @@ export function useTerminal(socket: Socket | null) {
     socket.on(SOCKET_EVENTS.EXECUTION.STDOUT, handleStdout);
     socket.on(SOCKET_EVENTS.EXECUTION.STDERR, handleStderr);
     socket.on(SOCKET_EVENTS.EXECUTION.COMPLETE, handleComplete);
+    socket.on(SOCKET_EVENTS.EXECUTION.WAITING_INPUT, handleWaitingInput);
 
     return () => {
       socket.off(SOCKET_EVENTS.EXECUTION.STDOUT, handleStdout);
       socket.off(SOCKET_EVENTS.EXECUTION.STDERR, handleStderr);
       socket.off(SOCKET_EVENTS.EXECUTION.COMPLETE, handleComplete);
+      socket.off(SOCKET_EVENTS.EXECUTION.WAITING_INPUT, handleWaitingInput);
     };
   }, [socket]);
 
@@ -196,5 +218,6 @@ export function useTerminal(socket: Socket | null) {
     sendInput,
     killExecution,
     isRunning: isRunningState,
+    isWaitingForInput,
   };
 }

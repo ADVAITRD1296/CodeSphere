@@ -122,6 +122,8 @@ interface TerminalPanelProps {
   lines: TerminalLine[];
   session: TerminalSession | null;
   isRunning: boolean;
+  /** True only when the backend signals the process is blocked on stdin */
+  isWaitingForInput: boolean;
   onRun: (language: ProgrammingLanguage, code: string) => void;
   onClear: () => void;
   onSendInput: (input: string) => void;
@@ -139,6 +141,7 @@ export const TerminalPanel = memo(({
   lines,
   session,
   isRunning,
+  isWaitingForInput,
   onRun,
   onClear,
   onSendInput,
@@ -156,36 +159,20 @@ export const TerminalPanel = memo(({
     activeFileLanguage || 'JAVASCRIPT'
   );
   const [stdinValue, setStdinValue] = useState('');
-  // inputSent: hide the ❯ prompt after user sends input.
-  // Re-shown only when new process output arrives (meaning program is asking again).
-  const [inputSent, setInputSent] = useState(false);
-  const linesLengthRef = useRef(lines.length);
 
   // Auto-scroll to bottom on new lines
   useEffect(() => {
     if (scrollRef.current && !isCollapsed) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-    // New output arrived after we sent input → program is waiting again, re-show prompt
-    if (inputSent && lines.length > linesLengthRef.current) {
-      setInputSent(false);
-    }
-    linesLengthRef.current = lines.length;
-  }, [lines, isCollapsed, inputSent]);
+  }, [lines, isCollapsed]);
 
-  // Reset inputSent when a new run starts
+  // Focus input when process signals it needs stdin
   useEffect(() => {
-    if (isRunning) {
-      setInputSent(false);
-    }
-  }, [isRunning]);
-
-  // Focus stdin input when process starts running and prompt is visible
-  useEffect(() => {
-    if (isRunning && !inputSent && inputRef.current && !isCollapsed) {
+    if (isWaitingForInput && inputRef.current && !isCollapsed) {
       inputRef.current.focus();
     }
-  }, [isRunning, inputSent, isCollapsed]);
+  }, [isWaitingForInput, isCollapsed]);
 
   // Sync language with active file
   useEffect(() => {
@@ -205,8 +192,6 @@ export const TerminalPanel = memo(({
       const val = stdinValue;
       onSendInput(val);
       setStdinValue('');
-      // Hide the prompt until the process produces new output
-      setInputSent(true);
     },
     [stdinValue, onSendInput]
   );
@@ -522,7 +507,8 @@ export const TerminalPanel = memo(({
               {lines.map((line) => (
                 <TerminalLineItem key={line.id} line={line} />
               ))}
-              {isRunning && !inputSent && (
+              {/* ❯ prompt — only when backend confirms process is blocked on stdin */}
+              {isWaitingForInput && (
                 <form
                   onSubmit={handleSendInput}
                   style={{

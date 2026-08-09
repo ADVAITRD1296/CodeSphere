@@ -39,6 +39,7 @@ export const SOCKET_EVENTS = {
     COMPLETE: 'execution:complete',
     INPUT: 'execution:input',
     KILL: 'execution:kill',
+    WAITING_INPUT: 'execution:waiting-input',
   },
   CHAT: {
     SEND_MESSAGE: 'chat:send-message',

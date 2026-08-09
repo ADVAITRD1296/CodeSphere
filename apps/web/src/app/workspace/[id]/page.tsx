@@ -136,7 +136,7 @@ export default function WorkspaceIDEPage() {
   } = useWhiteboard(workspaceId, socket);
 
   // Terminal state
-  const { lines, session, runCode, clearTerminal, sendInput, killExecution, isRunning } = useTerminal(socket);
+  const { lines, session, runCode, clearTerminal, sendInput, killExecution, isRunning, isWaitingForInput } = useTerminal(socket);
   const [terminalCollapsed, setTerminalCollapsed] = useState(false);
   const [terminalHeight, setTerminalHeight] = useState(DEFAULT_TERMINAL_HEIGHT);
 
@@ -502,6 +502,7 @@ export default function WorkspaceIDEPage() {
             lines={lines}
             session={session}
             isRunning={isRunning}
+            isWaitingForInput={isWaitingForInput}
             onRun={handleRunCode}
             onClear={clearTerminal}
             onSendInput={sendInput}
